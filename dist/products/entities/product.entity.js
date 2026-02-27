@@ -12,17 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Product = void 0;
 const typeorm_1 = require("typeorm");
 const order_item_entity_1 = require("../../orders/entities/order-item.entity");
-const product_file_entity_1 = require("./product-file.entity");
 let Product = class Product {
-    id;
-    name;
-    description;
-    defaultPrice;
-    defaultWeightG;
-    defaultEstimatedMinutes;
-    active;
-    orderItems;
-    productFiles;
 };
 exports.Product = Product;
 __decorate([
@@ -34,33 +24,9 @@ __decorate([
     __metadata("design:type", String)
 ], Product.prototype, "name", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
-    __metadata("design:type", String)
-], Product.prototype, "description", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'default_price', type: 'decimal', precision: 12, scale: 2, default: 0 }),
-    __metadata("design:type", Number)
-], Product.prototype, "defaultPrice", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'default_weight_g', type: 'float', nullable: true }),
-    __metadata("design:type", Number)
-], Product.prototype, "defaultWeightG", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'default_estimated_minutes', type: 'int', nullable: true }),
-    __metadata("design:type", Number)
-], Product.prototype, "defaultEstimatedMinutes", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ default: true }),
-    __metadata("design:type", Boolean)
-], Product.prototype, "active", void 0);
-__decorate([
     (0, typeorm_1.OneToMany)(() => order_item_entity_1.OrderItem, (item) => item.product),
     __metadata("design:type", Array)
 ], Product.prototype, "orderItems", void 0);
-__decorate([
-    (0, typeorm_1.OneToMany)(() => product_file_entity_1.ProductFile, (file) => file.product),
-    __metadata("design:type", Array)
-], Product.prototype, "productFiles", void 0);
 exports.Product = Product = __decorate([
     (0, typeorm_1.Entity)('products')
 ], Product);

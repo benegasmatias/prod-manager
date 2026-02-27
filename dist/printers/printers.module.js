@@ -16,6 +16,9 @@ exports.PrintersModule = PrintersModule;
 exports.PrintersModule = PrintersModule = __decorate([
     (0, common_1.Module)({
         imports: [typeorm_1.TypeOrmModule.forFeature([printer_entity_1.Printer])],
+        controllers: [],
+        providers: [],
+        exports: [typeorm_1.TypeOrmModule],
     })
 ], PrintersModule);
 //# sourceMappingURL=printers.module.js.map

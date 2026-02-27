@@ -13,10 +13,6 @@ exports.ProductFileDto = exports.CreateFileAssetDto = void 0;
 const class_validator_1 = require("class-validator");
 const enums_1 = require("../../common/enums");
 class CreateFileAssetDto {
-    name;
-    url;
-    fileType;
-    size;
 }
 exports.CreateFileAssetDto = CreateFileAssetDto;
 __decorate([
@@ -39,8 +35,6 @@ __decorate([
     __metadata("design:type", Number)
 ], CreateFileAssetDto.prototype, "size", void 0);
 class ProductFileDto {
-    fileAssetId;
-    role;
 }
 exports.ProductFileDto = ProductFileDto;
 __decorate([

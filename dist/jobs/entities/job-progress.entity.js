@@ -13,14 +13,6 @@ exports.JobProgress = void 0;
 const typeorm_1 = require("typeorm");
 const production_job_entity_1 = require("./production-job.entity");
 let JobProgress = class JobProgress {
-    id;
-    productionJobId;
-    productionJob;
-    createdAt;
-    unitsDone;
-    minutesDone;
-    weightUsedG;
-    note;
 };
 exports.JobProgress = JobProgress;
 __decorate([

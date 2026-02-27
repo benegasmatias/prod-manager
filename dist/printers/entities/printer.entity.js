@@ -13,12 +13,6 @@ exports.Printer = void 0;
 const typeorm_1 = require("typeorm");
 const production_job_entity_1 = require("../../jobs/entities/production-job.entity");
 let Printer = class Printer {
-    id;
-    name;
-    model;
-    nozzle;
-    active;
-    productionJobs;
 };
 exports.Printer = Printer;
 __decorate([
@@ -29,18 +23,6 @@ __decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], Printer.prototype, "name", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
-], Printer.prototype, "model", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
-], Printer.prototype, "nozzle", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ default: true }),
-    __metadata("design:type", Boolean)
-], Printer.prototype, "active", void 0);
 __decorate([
     (0, typeorm_1.OneToMany)(() => production_job_entity_1.ProductionJob, (job) => job.printer),
     __metadata("design:type", Array)

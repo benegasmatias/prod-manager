@@ -8,8 +8,5 @@ export declare class OrderItem {
     productId: string;
     product: Product;
     quantity: number;
-    unitPrice: number;
-    subtotal: number;
-    notes: string;
     productionJobs: ProductionJob[];
 }

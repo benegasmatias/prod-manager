@@ -5,33 +5,25 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var AllExceptionsFilter_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AllExceptionsFilter = void 0;
 const common_1 = require("@nestjs/common");
-let AllExceptionsFilter = AllExceptionsFilter_1 = class AllExceptionsFilter {
-    logger = new common_1.Logger(AllExceptionsFilter_1.name);
+let AllExceptionsFilter = class AllExceptionsFilter {
     catch(exception, host) {
         const ctx = host.switchToHttp();
         const response = ctx.getResponse();
-        const request = ctx.getRequest();
         const status = exception instanceof common_1.HttpException
             ? exception.getStatus()
             : common_1.HttpStatus.INTERNAL_SERVER_ERROR;
-        const message = exception instanceof common_1.HttpException
-            ? exception.getResponse()
-            : 'Internal server error';
-        this.logger.error(`Http Status: ${status} Error Message: ${JSON.stringify(message)}`, exception.stack);
         response.status(status).json({
             statusCode: status,
             timestamp: new Date().toISOString(),
-            path: request.url,
-            message: typeof message === 'string' ? message : message.message || message,
+            message: exception instanceof common_1.HttpException ? exception.getResponse() : 'Internal server error',
         });
     }
 };
 exports.AllExceptionsFilter = AllExceptionsFilter;
-exports.AllExceptionsFilter = AllExceptionsFilter = AllExceptionsFilter_1 = __decorate([
+exports.AllExceptionsFilter = AllExceptionsFilter = __decorate([
     (0, common_1.Catch)()
 ], AllExceptionsFilter);
 //# sourceMappingURL=http-exception.filter.js.map

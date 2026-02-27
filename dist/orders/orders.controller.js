@@ -18,7 +18,6 @@ const orders_service_1 = require("./orders.service");
 const order_dto_1 = require("./dto/order.dto");
 const enums_1 = require("../common/enums");
 let OrdersController = class OrdersController {
-    ordersService;
     constructor(ordersService) {
         this.ordersService = ordersService;
     }

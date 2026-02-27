@@ -18,7 +18,6 @@ const jobs_service_1 = require("./jobs.service");
 const job_dto_1 = require("./dto/job.dto");
 const enums_1 = require("../common/enums");
 let JobsController = class JobsController {
-    jobsService;
     constructor(jobsService) {
         this.jobsService = jobsService;
     }

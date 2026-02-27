@@ -14,13 +14,6 @@ const typeorm_1 = require("typeorm");
 const production_job_entity_1 = require("../../jobs/entities/production-job.entity");
 const enums_1 = require("../../common/enums");
 let JobStatusHistory = class JobStatusHistory {
-    id;
-    productionJobId;
-    productionJob;
-    changedAt;
-    fromStatus;
-    toStatus;
-    note;
 };
 exports.JobStatusHistory = JobStatusHistory;
 __decorate([

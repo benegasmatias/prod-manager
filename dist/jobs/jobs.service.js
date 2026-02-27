@@ -22,10 +22,6 @@ const job_status_history_entity_1 = require("../history/entities/job-status-hist
 const orders_service_1 = require("../orders/orders.service");
 const enums_1 = require("../common/enums");
 let JobsService = class JobsService {
-    jobRepository;
-    progressRepository;
-    statusHistoryRepository;
-    ordersService;
     constructor(jobRepository, progressRepository, statusHistoryRepository, ordersService) {
         this.jobRepository = jobRepository;
         this.progressRepository = progressRepository;

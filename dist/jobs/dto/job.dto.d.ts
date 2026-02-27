@@ -4,20 +4,23 @@ export declare class CreateJobDto {
     orderItemId: string;
     printerId?: string;
     materialId?: string;
+    title: string;
     totalUnits: number;
-    priority?: Priority;
+    estimatedMinutesTotal?: number;
+    estimatedWeightGTotal?: number;
+    scheduledStart?: Date;
+    dueDate?: Date;
     sortRank?: number;
-    title?: string;
+    priority?: Priority;
 }
 export declare class UpdateJobDto {
     status?: JobStatus;
-    priority?: Priority;
-    sortRank?: number;
+    note?: string;
+    title?: string;
     printerId?: string;
     materialId?: string;
-    note?: string;
 }
 export declare class CreateProgressDto {
     unitsDone: number;
-    note?: string;
+    notes?: string;
 }

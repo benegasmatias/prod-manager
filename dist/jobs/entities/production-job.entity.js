@@ -19,27 +19,6 @@ const enums_1 = require("../../common/enums");
 const job_progress_entity_1 = require("./job-progress.entity");
 const job_status_history_entity_1 = require("../../history/entities/job-status-history.entity");
 let ProductionJob = class ProductionJob {
-    id;
-    orderId;
-    order;
-    orderItemId;
-    orderItem;
-    printerId;
-    printer;
-    materialId;
-    material;
-    title;
-    totalUnits;
-    estimatedMinutesTotal;
-    estimatedWeightGTotal;
-    scheduledStart;
-    dueDate;
-    status;
-    sortRank;
-    priority;
-    createdAt;
-    progress;
-    statusHistory;
 };
 exports.ProductionJob = ProductionJob;
 __decorate([

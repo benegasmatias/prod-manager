@@ -11,17 +11,8 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Material = void 0;
 const typeorm_1 = require("typeorm");
-const enums_1 = require("../../common/enums");
 const production_job_entity_1 = require("../../jobs/entities/production-job.entity");
 let Material = class Material {
-    id;
-    name;
-    type;
-    brand;
-    color;
-    costPerKg;
-    active;
-    productionJobs;
 };
 exports.Material = Material;
 __decorate([
@@ -32,26 +23,6 @@ __decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], Material.prototype, "name", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'enum', enum: enums_1.MaterialType }),
-    __metadata("design:type", String)
-], Material.prototype, "type", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
-], Material.prototype, "brand", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
-], Material.prototype, "color", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'cost_per_kg', type: 'decimal', precision: 12, scale: 2, default: 0 }),
-    __metadata("design:type", Number)
-], Material.prototype, "costPerKg", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ default: true }),
-    __metadata("design:type", Boolean)
-], Material.prototype, "active", void 0);
 __decorate([
     (0, typeorm_1.OneToMany)(() => production_job_entity_1.ProductionJob, (job) => job.material),
     __metadata("design:type", Array)

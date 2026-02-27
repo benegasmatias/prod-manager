@@ -11,27 +11,11 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Order = void 0;
 const typeorm_1 = require("typeorm");
-const customer_entity_1 = require("../../customers/entities/customer.entity");
 const order_item_entity_1 = require("./order-item.entity");
-const enums_1 = require("../../common/enums");
 const production_job_entity_1 = require("../../jobs/entities/production-job.entity");
 const order_status_history_entity_1 = require("../../history/entities/order-status-history.entity");
-const payment_entity_1 = require("../../payments/entities/payment.entity");
+const enums_1 = require("../../common/enums");
 let Order = class Order {
-    id;
-    customerId;
-    customer;
-    code;
-    createdAt;
-    dueDate;
-    priority;
-    status;
-    totalPrice;
-    notes;
-    items;
-    jobs;
-    statusHistory;
-    payments;
 };
 exports.Order = Order;
 __decorate([
@@ -39,42 +23,13 @@ __decorate([
     __metadata("design:type", String)
 ], Order.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'customer_id' }),
-    __metadata("design:type", String)
-], Order.prototype, "customerId", void 0);
-__decorate([
-    (0, typeorm_1.ManyToOne)(() => customer_entity_1.Customer, (customer) => customer.orders),
-    (0, typeorm_1.JoinColumn)({ name: 'customer_id' }),
-    __metadata("design:type", customer_entity_1.Customer)
-], Order.prototype, "customer", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ unique: true, nullable: true }),
-    __metadata("design:type", String)
-], Order.prototype, "code", void 0);
-__decorate([
-    (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
-    __metadata("design:type", Date)
-], Order.prototype, "createdAt", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'due_date' }),
-    __metadata("design:type", Date)
-], Order.prototype, "dueDate", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'enum', enum: enums_1.Priority, default: enums_1.Priority.NORMAL }),
-    __metadata("design:type", String)
-], Order.prototype, "priority", void 0);
-__decorate([
     (0, typeorm_1.Column)({ type: 'enum', enum: enums_1.OrderStatus, default: enums_1.OrderStatus.DRAFT }),
     __metadata("design:type", String)
 ], Order.prototype, "status", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'total_price', type: 'decimal', precision: 12, scale: 2, default: 0 }),
-    __metadata("design:type", Number)
-], Order.prototype, "totalPrice", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    (0, typeorm_1.Column)(),
     __metadata("design:type", String)
-], Order.prototype, "notes", void 0);
+], Order.prototype, "clientId", void 0);
 __decorate([
     (0, typeorm_1.OneToMany)(() => order_item_entity_1.OrderItem, (item) => item.order),
     __metadata("design:type", Array)
@@ -88,9 +43,13 @@ __decorate([
     __metadata("design:type", Array)
 ], Order.prototype, "statusHistory", void 0);
 __decorate([
-    (0, typeorm_1.OneToMany)(() => payment_entity_1.Payment, (payment) => payment.order),
-    __metadata("design:type", Array)
-], Order.prototype, "payments", void 0);
+    (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
+    __metadata("design:type", Date)
+], Order.prototype, "createdAt", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'due_date', nullable: true }),
+    __metadata("design:type", Date)
+], Order.prototype, "dueDate", void 0);
 exports.Order = Order = __decorate([
     (0, typeorm_1.Entity)('orders')
 ], Order);

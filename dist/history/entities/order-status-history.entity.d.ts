@@ -4,8 +4,8 @@ export declare class OrderStatusHistory {
     id: string;
     orderId: string;
     order: Order;
-    changedAt: Date;
     fromStatus: OrderStatus;
     toStatus: OrderStatus;
     note: string;
+    createdAt: Date;
 }

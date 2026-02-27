@@ -16,6 +16,9 @@ exports.MaterialsModule = MaterialsModule;
 exports.MaterialsModule = MaterialsModule = __decorate([
     (0, common_1.Module)({
         imports: [typeorm_1.TypeOrmModule.forFeature([material_entity_1.Material])],
+        controllers: [],
+        providers: [],
+        exports: [typeorm_1.TypeOrmModule],
     })
 ], MaterialsModule);
 //# sourceMappingURL=materials.module.js.map

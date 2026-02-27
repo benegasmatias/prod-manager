@@ -15,16 +15,6 @@ const order_entity_1 = require("./order.entity");
 const product_entity_1 = require("../../products/entities/product.entity");
 const production_job_entity_1 = require("../../jobs/entities/production-job.entity");
 let OrderItem = class OrderItem {
-    id;
-    orderId;
-    order;
-    productId;
-    product;
-    quantity;
-    unitPrice;
-    subtotal;
-    notes;
-    productionJobs;
 };
 exports.OrderItem = OrderItem;
 __decorate([
@@ -36,35 +26,23 @@ __decorate([
     __metadata("design:type", String)
 ], OrderItem.prototype, "orderId", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => order_entity_1.Order, (order) => order.items, { onDelete: 'CASCADE' }),
+    (0, typeorm_1.ManyToOne)(() => order_entity_1.Order, (order) => order.items),
     (0, typeorm_1.JoinColumn)({ name: 'order_id' }),
     __metadata("design:type", order_entity_1.Order)
 ], OrderItem.prototype, "order", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'product_id' }),
+    (0, typeorm_1.Column)({ name: 'product_id', nullable: true }),
     __metadata("design:type", String)
 ], OrderItem.prototype, "productId", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => product_entity_1.Product, (product) => product.orderItems),
+    (0, typeorm_1.ManyToOne)(() => product_entity_1.Product, (product) => product.orderItems, { nullable: true }),
     (0, typeorm_1.JoinColumn)({ name: 'product_id' }),
     __metadata("design:type", product_entity_1.Product)
 ], OrderItem.prototype, "product", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int' }),
+    (0, typeorm_1.Column)(),
     __metadata("design:type", Number)
 ], OrderItem.prototype, "quantity", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'unit_price', type: 'decimal', precision: 12, scale: 2 }),
-    __metadata("design:type", Number)
-], OrderItem.prototype, "unitPrice", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'decimal', precision: 12, scale: 2 }),
-    __metadata("design:type", Number)
-], OrderItem.prototype, "subtotal", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
-    __metadata("design:type", String)
-], OrderItem.prototype, "notes", void 0);
 __decorate([
     (0, typeorm_1.OneToMany)(() => production_job_entity_1.ProductionJob, (job) => job.orderItem),
     __metadata("design:type", Array)

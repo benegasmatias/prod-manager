@@ -13,9 +13,6 @@ exports.CreatePaymentDto = void 0;
 const class_validator_1 = require("class-validator");
 const enums_1 = require("../../common/enums");
 class CreatePaymentDto {
-    amount;
-    method;
-    reference;
 }
 exports.CreatePaymentDto = CreatePaymentDto;
 __decorate([
