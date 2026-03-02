@@ -13,6 +13,39 @@ export interface Client {
     totalOrders: number;
 }
 
+export type ItemPedido = {
+    id: string
+    nombreProducto: string
+    descripcion?: string
+    cantidad: number
+    precioUnitario: number
+    senia: number
+    demoraEstimadaMinutos?: number
+    // condicional por rubro:
+    urlStl?: string
+    pesoGramos?: number
+    duracionEstimadaMinutos?: number
+    medidas?: string
+    material?: string
+    terminacion?: string
+}
+
+export type Pedido = {
+    id: string
+    negocioId: string
+    numero: string
+    clienteId: string
+    fechaCreacion: string
+    fechaEntrega: string
+    estado: OrderStatus
+    observaciones?: string
+    items: ItemPedido[]
+    total: number
+    totalSenias: number
+    saldo: number
+    urgencia: Priority
+}
+
 export interface OrderItem {
     id: string;
     productName: string;

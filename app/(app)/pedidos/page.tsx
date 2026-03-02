@@ -1,15 +1,25 @@
 'use client'
 
 import { OrdersTable } from '@/src/components/OrdersTable'
-import { MOCK_ORDERS_BY_NEGOCIO } from '@/src/lib/mock-data'
 import { Button } from '@/src/components/ui/button'
 import { Plus, LayoutGrid, List } from 'lucide-react'
 import Link from 'next/link'
 import { useNegocio } from '@/src/context/NegocioContext'
+import { usePedidos } from '@/src/context/PedidosContext'
+import { useClientes } from '@/src/context/ClientesContext'
 
 export default function OrdersPage() {
     const { negocioActivoId } = useNegocio()
-    const orders = MOCK_ORDERS_BY_NEGOCIO[negocioActivoId] || []
+    const { pedidos } = usePedidos()
+    const { clientes } = useClientes()
+
+    const orders = pedidos[negocioActivoId] || []
+    const misClientes = clientes[negocioActivoId] || []
+
+    const getClientName = (id: string) => {
+        const c = misClientes.find(cli => cli.id === id)
+        return c ? c.nombre : 'Cliente Desconocido'
+    }
 
     return (
         <div className="space-y-6">
@@ -27,9 +37,11 @@ export default function OrdersPage() {
                             <LayoutGrid className="h-4 w-4" />
                         </Link>
                     </div>
-                    <Button className="gap-2">
-                        <Plus className="h-4 w-4" /> Nuevo Pedido
-                    </Button>
+                    <Link href="/pedidos/nuevo">
+                        <Button className="gap-2">
+                            <Plus className="h-4 w-4" /> Nuevo Pedido
+                        </Button>
+                    </Link>
                 </div>
             </div>
 
@@ -52,7 +64,7 @@ export default function OrdersPage() {
                 </div>
             </div>
 
-            <OrdersTable orders={orders} />
+            <OrdersTable orders={orders} getClientName={getClientName} />
         </div>
     )
 }

@@ -2,7 +2,7 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
     // En v4 esto se puede manejar por CSS, pero definimos darkMode para compatibilidad con plugins
-    darkMode: ["class"],
+    darkMode: "class",
     content: [
         "./app/**/*.{js,ts,jsx,tsx,mdx}",
         "./components/**/*.{js,ts,jsx,tsx,mdx}",

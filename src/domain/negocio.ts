@@ -40,7 +40,6 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
         case 'CARPINTERIA':
             return {
                 sidebarItems: ['/dashboard', '/pedidos', '/clientes', '/produccion', '/reportes', '/ajustes'],
-                sidebarLabels: { produccion: 'Seguimiento' }, // We'll handle this in the sidebar
                 labels: { produccion: 'Seguimiento', items: 'Planos y Piezas' },
                 itemFields: [
                     { key: 'nombre', label: 'Pieza / Trabajo', tipo: 'text', required: true },

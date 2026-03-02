@@ -1,19 +1,33 @@
 'use client'
 
 import { useParams } from 'next/navigation'
-import { MOCK_CLIENTS, MOCK_ORDERS } from '@/src/lib/mock-data'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/src/components/ui/card'
 import { Button } from '@/src/components/ui/button'
 import { ArrowLeft, Mail, Phone, MapPin } from 'lucide-react'
 import Link from 'next/link'
 import { OrdersTable } from '@/src/components/OrdersTable'
+import { useNegocio } from '@/src/context/NegocioContext'
+import { useClientes } from '@/src/context/ClientesContext'
+import { usePedidos } from '@/src/context/PedidosContext'
 
 export default function ClientDetailPage() {
     const { id } = useParams()
-    const client = MOCK_CLIENTS.find(c => c.id === id)
-    const clientOrders = MOCK_ORDERS.filter(o => o.clientId === id)
+    const { negocioActivoId } = useNegocio()
+    const { clientes } = useClientes()
+    const { pedidos } = usePedidos()
 
-    if (!client) return <div>Cliente no encontrado</div>
+    const misClientes = clientes[negocioActivoId] || []
+    const misPedidos = pedidos[negocioActivoId] || []
+
+    const client = misClientes.find(c => c.id === id)
+    const clientOrders = misPedidos.filter(o => o.clienteId === id)
+
+    const getClientName = (cid: string) => {
+        const c = misClientes.find(cli => cli.id === cid)
+        return c ? c.nombre : 'Desconocido'
+    }
+
+    if (!client) return <div className="p-8 text-center text-zinc-500">Cliente no encontrado</div>
 
     return (
         <div className="space-y-6">
@@ -23,7 +37,7 @@ export default function ClientDetailPage() {
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
                 </Link>
-                <h1 className="text-3xl font-bold tracking-tight">{client.name}</h1>
+                <h1 className="text-3xl font-bold tracking-tight">{client.nombre}</h1>
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
@@ -34,17 +48,12 @@ export default function ClientDetailPage() {
                     <CardContent className="space-y-4">
                         <div className="flex items-center gap-3 text-sm">
                             <Mail className="h-4 w-4 text-zinc-400" />
-                            <span>{client.email}</span>
+                            <span>{client.email || 'Sin email'}</span>
                         </div>
                         <div className="flex items-center gap-3 text-sm">
                             <Phone className="h-4 w-4 text-zinc-400" />
-                            <span>{client.phone}</span>
+                            <span>{client.telefono || 'Sin teléfono'}</span>
                         </div>
-                        <div className="flex items-center gap-3 text-sm">
-                            <MapPin className="h-4 w-4 text-zinc-400" />
-                            <span>{client.address}</span>
-                        </div>
-                        <Button className="w-full mt-4">Editar Cliente</Button>
                     </CardContent>
                 </Card>
 
@@ -55,7 +64,7 @@ export default function ClientDetailPage() {
                             <CardDescription>Lista de todos los pedidos realizados por este cliente.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <OrdersTable orders={clientOrders} />
+                            <OrdersTable orders={clientOrders} getClientName={getClientName} />
                         </CardContent>
                     </Card>
                 </div>
