@@ -3,6 +3,8 @@ import { Order } from '../orders/entities/order.entity';
 import { OrderItem } from '../orders/entities/order-item.entity';
 import { User } from '../users/entities/user.entity';
 import { OrderStatus } from '../common/enums';
+import { Business } from '../businesses/entities/business.entity';
+import { BusinessMembership, UserRole } from '../businesses/entities/business-membership.entity';
 
 async function seed() {
     try {
@@ -12,20 +14,45 @@ async function seed() {
         const orderRepo = AppDataSource.getRepository(Order);
         const itemRepo = AppDataSource.getRepository(OrderItem);
         const userRepo = AppDataSource.getRepository(User);
+        const businessRepo = AppDataSource.getRepository(Business);
+        const membershipRepo = AppDataSource.getRepository(BusinessMembership);
 
-        // Limpiar datos previos si los hay (Opcional, pero util para pruebas limpias)
-        await itemRepo.query('DELETE FROM order_items');
-        await orderRepo.query('DELETE FROM orders');
-        await userRepo.query('DELETE FROM users');
+        // 1. Negocios Base (Idempotente)
+        const baseBusinesses = [
+            { name: 'Taller Impresión 3D Alfa', category: 'IMPRESIONES_3D' },
+            { name: 'Impresiones 3D Express', category: 'IMPRESIONES_3D' },
+            { name: 'PrintWorks 3D Studio', category: 'IMPRESIONES_3D' },
+            { name: 'Servicios Metalúrgicos', category: 'METALURGICA' },
+            { name: 'Carpintería Moderna', category: 'CARPINTERIA' },
+        ];
 
-        // 0. Usuario de ejemplo (Supabase UID simulado)
-        const sampleUser = userRepo.create({
-            id: 'd8866567-5d0b-4780-8777-62886f756677',
-            email: 'matias@example.com',
-            fullName: 'Matias Benegas',
-        });
-        await userRepo.save(sampleUser);
-        console.log('✅ Usuario de ejemplo creado.');
+        const createdBusinesses = [];
+        for (const base of baseBusinesses) {
+            let biz = await businessRepo.findOne({
+                where: { name: base.name, category: base.category }
+            });
+            if (!biz) {
+                biz = businessRepo.create({
+                    name: base.name,
+                    category: base.category,
+                });
+                biz = await businessRepo.save(biz);
+                console.log(`✅ Negocio creado: ${base.name} [${base.category}]`);
+            } else {
+                console.log(`ℹ️ Negocio ya existe: ${base.name}`);
+            }
+            createdBusinesses.push(biz);
+        }
+
+        if (createdBusinesses.length < 2) {
+            console.warn('⚠️ Menos de 2 negocios encontrados/creados. Algunos otros seeds podrían fallar.');
+        }
+
+        const biz1 = createdBusinesses[0];
+        const biz2 = createdBusinesses[1];
+
+        // 2. No vinculamos usuarios automáticamente (El usuario debe entrar y crear/seleccionar)
+        console.log('ℹ️ Auto-vinculación de usuarios deshabilitada.');
 
         // 1. Pedido 1: Fecha de entrega cercana (1 día despues de hoy) + 2 items
         const dueSoon = new Date();

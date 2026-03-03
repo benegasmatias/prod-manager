@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, UseGuards } from '@nestjs/common';
 import { JobsService } from './jobs.service';
 import { CreateJobDto, CreateProgressDto, UpdateJobDto } from './dto/job.dto';
 import { JobStatus } from '../common/enums';
+import { SupabaseAuthGuard } from '../users/guards/supabase-auth.guard';
 
 @Controller('jobs')
+@UseGuards(SupabaseAuthGuard)
 export class JobsController {
     constructor(private readonly jobsService: JobsService) { }
 

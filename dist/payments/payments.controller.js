@@ -16,6 +16,7 @@ exports.PaymentsController = void 0;
 const common_1 = require("@nestjs/common");
 const payments_service_1 = require("./payments.service");
 const payment_dto_1 = require("./dto/payment.dto");
+const supabase_auth_guard_1 = require("../users/guards/supabase-auth.guard");
 let PaymentsController = class PaymentsController {
     constructor(paymentsService) {
         this.paymentsService = paymentsService;
@@ -45,6 +46,7 @@ __decorate([
 ], PaymentsController.prototype, "findAll", null);
 exports.PaymentsController = PaymentsController = __decorate([
     (0, common_1.Controller)('orders/:id/payments'),
+    (0, common_1.UseGuards)(supabase_auth_guard_1.SupabaseAuthGuard),
     __metadata("design:paramtypes", [payments_service_1.PaymentsService])
 ], PaymentsController);
 //# sourceMappingURL=payments.controller.js.map

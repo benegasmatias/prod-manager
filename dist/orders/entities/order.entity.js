@@ -17,6 +17,7 @@ const enums_1 = require("../../common/enums");
 const production_job_entity_1 = require("../../jobs/entities/production-job.entity");
 const order_status_history_entity_1 = require("../../history/entities/order-status-history.entity");
 const payment_entity_1 = require("../../payments/entities/payment.entity");
+const business_entity_1 = require("../../businesses/entities/business.entity");
 let Order = class Order {
 };
 exports.Order = Order;
@@ -24,6 +25,15 @@ __decorate([
     (0, typeorm_1.PrimaryGeneratedColumn)('uuid'),
     __metadata("design:type", String)
 ], Order.prototype, "id", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'business_id', nullable: true }),
+    __metadata("design:type", String)
+], Order.prototype, "businessId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => business_entity_1.Business),
+    (0, typeorm_1.JoinColumn)({ name: 'business_id' }),
+    __metadata("design:type", business_entity_1.Business)
+], Order.prototype, "business", void 0);
 __decorate([
     (0, typeorm_1.Column)({ name: 'client_name', nullable: true }),
     __metadata("design:type", String)

@@ -13,15 +13,20 @@ const user_entity_1 = require("./entities/user.entity");
 const users_service_1 = require("./users.service");
 const users_controller_1 = require("./users.controller");
 const supabase_service_1 = require("../common/supabase/supabase.service");
+const businesses_module_1 = require("../businesses/businesses.module");
 let UsersModule = class UsersModule {
 };
 exports.UsersModule = UsersModule;
 exports.UsersModule = UsersModule = __decorate([
+    (0, common_1.Global)(),
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([user_entity_1.User])],
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([user_entity_1.User]),
+            businesses_module_1.BusinessesModule,
+        ],
         controllers: [users_controller_1.UsersController],
         providers: [users_service_1.UsersService, supabase_service_1.SupabaseService],
-        exports: [users_service_1.UsersService, typeorm_1.TypeOrmModule],
+        exports: [users_service_1.UsersService, supabase_service_1.SupabaseService, typeorm_1.TypeOrmModule],
     })
 ], UsersModule);
 //# sourceMappingURL=users.module.js.map

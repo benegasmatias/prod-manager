@@ -16,6 +16,7 @@ exports.FilesController = void 0;
 const common_1 = require("@nestjs/common");
 const products_service_1 = require("./products.service");
 const file_dto_1 = require("./dto/file.dto");
+const supabase_auth_guard_1 = require("../users/guards/supabase-auth.guard");
 let FilesController = class FilesController {
     constructor(productsService) {
         this.productsService = productsService;
@@ -34,6 +35,7 @@ __decorate([
 ], FilesController.prototype, "create", null);
 exports.FilesController = FilesController = __decorate([
     (0, common_1.Controller)('files'),
+    (0, common_1.UseGuards)(supabase_auth_guard_1.SupabaseAuthGuard),
     __metadata("design:paramtypes", [products_service_1.ProductsService])
 ], FilesController);
 //# sourceMappingURL=files.controller.js.map

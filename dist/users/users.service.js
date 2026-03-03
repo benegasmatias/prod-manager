@@ -17,9 +17,11 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const user_entity_1 = require("./entities/user.entity");
+const businesses_service_1 = require("../businesses/businesses.service");
 let UsersService = class UsersService {
-    constructor(userRepository) {
+    constructor(userRepository, businessesService) {
         this.userRepository = userRepository;
+        this.businessesService = businessesService;
     }
     async findOne(id) {
         const user = await this.userRepository.findOne({ where: { id } });
@@ -41,11 +43,21 @@ let UsersService = class UsersService {
         Object.assign(user, updateUserDto);
         return this.userRepository.save(user);
     }
+    async setDefaultBusiness(userId, businessId) {
+        const hasAccess = await this.businessesService.checkAccess(userId, businessId);
+        if (!hasAccess) {
+            throw new common_1.ForbiddenException(`User does not have access to business ${businessId}`);
+        }
+        const user = await this.findOne(userId);
+        user.defaultBusinessId = businessId;
+        return this.userRepository.save(user);
+    }
 };
 exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        businesses_service_1.BusinessesService])
 ], UsersService);
 //# sourceMappingURL=users.service.js.map

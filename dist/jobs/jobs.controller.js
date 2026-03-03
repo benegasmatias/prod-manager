@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const jobs_service_1 = require("./jobs.service");
 const job_dto_1 = require("./dto/job.dto");
 const enums_1 = require("../common/enums");
+const supabase_auth_guard_1 = require("../users/guards/supabase-auth.guard");
 let JobsController = class JobsController {
     constructor(jobsService) {
         this.jobsService = jobsService;
@@ -88,6 +89,7 @@ __decorate([
 ], JobsController.prototype, "addProgress", null);
 exports.JobsController = JobsController = __decorate([
     (0, common_1.Controller)('jobs'),
+    (0, common_1.UseGuards)(supabase_auth_guard_1.SupabaseAuthGuard),
     __metadata("design:paramtypes", [jobs_service_1.JobsService])
 ], JobsController);
 //# sourceMappingURL=jobs.controller.js.map

@@ -16,6 +16,7 @@ exports.CustomersController = void 0;
 const common_1 = require("@nestjs/common");
 const customers_service_1 = require("./customers.service");
 const customer_dto_1 = require("./dto/customer.dto");
+const supabase_auth_guard_1 = require("../users/guards/supabase-auth.guard");
 let CustomersController = class CustomersController {
     constructor(customersService) {
         this.customersService = customersService;
@@ -66,6 +67,7 @@ __decorate([
 ], CustomersController.prototype, "update", null);
 exports.CustomersController = CustomersController = __decorate([
     (0, common_1.Controller)('customers'),
+    (0, common_1.UseGuards)(supabase_auth_guard_1.SupabaseAuthGuard),
     __metadata("design:paramtypes", [customers_service_1.CustomersService])
 ], CustomersController);
 //# sourceMappingURL=customers.controller.js.map

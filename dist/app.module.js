@@ -18,6 +18,7 @@ const payments_module_1 = require("./payments/payments.module");
 const printers_module_1 = require("./printers/printers.module");
 const materials_module_1 = require("./materials/materials.module");
 const users_module_1 = require("./users/users.module");
+const businesses_module_1 = require("./businesses/businesses.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -51,6 +52,7 @@ exports.AppModule = AppModule = __decorate([
             printers_module_1.PrintersModule,
             materials_module_1.MaterialsModule,
             users_module_1.UsersModule,
+            businesses_module_1.BusinessesModule,
         ],
     })
 ], AppModule);

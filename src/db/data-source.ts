@@ -13,6 +13,9 @@ import { ProductFile } from '../products/entities/product-file.entity';
 import { JobStatusHistory } from '../history/entities/job-status-history.entity';
 import { JobProgress } from '../jobs/entities/job-progress.entity';
 import { User } from '../users/entities/user.entity';
+import { Business } from '../businesses/entities/business.entity';
+import { BusinessMembership } from '../businesses/entities/business-membership.entity';
+import { BusinessTemplate } from '../businesses/entities/business-template.entity';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -37,6 +40,9 @@ export const AppDataSource = new DataSource({
         JobStatusHistory,
         JobProgress,
         User,
+        Business,
+        BusinessMembership,
+        BusinessTemplate,
     ],
     migrations: [__dirname + '/migrations/*.ts'],
     ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,

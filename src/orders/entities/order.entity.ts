@@ -5,11 +5,19 @@ import { OrderStatus } from '../../common/enums';
 import { ProductionJob } from '../../jobs/entities/production-job.entity';
 import { OrderStatusHistory } from '../../history/entities/order-status-history.entity';
 import { Payment } from '../../payments/entities/payment.entity';
+import { Business } from '../../businesses/entities/business.entity';
 
 @Entity('orders')
 export class Order {
     @PrimaryGeneratedColumn('uuid')
     id: string;
+
+    @Column({ name: 'business_id', nullable: true })
+    businessId: string;
+
+    @ManyToOne(() => Business)
+    @JoinColumn({ name: 'business_id' })
+    business: Business;
 
     @Column({ name: 'client_name', nullable: true })
     clientName: string;

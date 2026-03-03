@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Query, UseGuards } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 import { CreateFileAssetDto, ProductFileDto } from './dto/file.dto';
+import { SupabaseAuthGuard } from '../users/guards/supabase-auth.guard';
 
 @Controller('products')
+@UseGuards(SupabaseAuthGuard)
 export class ProductsController {
     constructor(private readonly productsService: ProductsService) { }
 

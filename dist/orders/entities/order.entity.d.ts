@@ -4,8 +4,11 @@ import { OrderStatus } from '../../common/enums';
 import { ProductionJob } from '../../jobs/entities/production-job.entity';
 import { OrderStatusHistory } from '../../history/entities/order-status-history.entity';
 import { Payment } from '../../payments/entities/payment.entity';
+import { Business } from '../../businesses/entities/business.entity';
 export declare class Order {
     id: string;
+    businessId: string;
+    business: Business;
     clientName: string;
     dueDate: Date;
     priority: number;

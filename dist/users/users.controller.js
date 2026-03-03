@@ -16,6 +16,7 @@ exports.UsersController = void 0;
 const common_1 = require("@nestjs/common");
 const users_service_1 = require("./users.service");
 const update_user_dto_1 = require("./dto/update-user.dto");
+const set_default_business_dto_1 = require("./dto/set-default-business.dto");
 const supabase_auth_guard_1 = require("./guards/supabase-auth.guard");
 let UsersController = class UsersController {
     constructor(usersService) {
@@ -26,6 +27,9 @@ let UsersController = class UsersController {
     }
     async updateProfile(req, updateUserDto) {
         return this.usersService.update(req.user.id, updateUserDto);
+    }
+    async updateDefaultBusiness(req, setDefaultBusinessDto) {
+        return this.usersService.setDefaultBusiness(req.user.id, setDefaultBusinessDto.businessId);
     }
 };
 exports.UsersController = UsersController;
@@ -44,6 +48,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, update_user_dto_1.UpdateUserDto]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "updateProfile", null);
+__decorate([
+    (0, common_1.Put)('default-business'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, set_default_business_dto_1.SetDefaultBusinessDto]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "updateDefaultBusiness", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)('me'),
     (0, common_1.UseGuards)(supabase_auth_guard_1.SupabaseAuthGuard),

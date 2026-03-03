@@ -11,6 +11,9 @@ export class User {
     @Column({ name: 'full_name', nullable: true })
     fullName: string;
 
+    @Column({ name: 'default_business_id', nullable: true, type: 'uuid' })
+    defaultBusinessId: string;
+
     @CreateDateColumn({ name: 'created_at' })
     createdAt: Date;
 

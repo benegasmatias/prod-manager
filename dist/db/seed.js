@@ -5,6 +5,8 @@ const order_entity_1 = require("../orders/entities/order.entity");
 const order_item_entity_1 = require("../orders/entities/order-item.entity");
 const user_entity_1 = require("../users/entities/user.entity");
 const enums_1 = require("../common/enums");
+const business_entity_1 = require("../businesses/entities/business.entity");
+const business_membership_entity_1 = require("../businesses/entities/business-membership.entity");
 async function seed() {
     try {
         await data_source_1.AppDataSource.initialize();
@@ -12,16 +14,39 @@ async function seed() {
         const orderRepo = data_source_1.AppDataSource.getRepository(order_entity_1.Order);
         const itemRepo = data_source_1.AppDataSource.getRepository(order_item_entity_1.OrderItem);
         const userRepo = data_source_1.AppDataSource.getRepository(user_entity_1.User);
-        await itemRepo.query('DELETE FROM order_items');
-        await orderRepo.query('DELETE FROM orders');
-        await userRepo.query('DELETE FROM users');
-        const sampleUser = userRepo.create({
-            id: 'd8866567-5d0b-4780-8777-62886f756677',
-            email: 'matias@example.com',
-            fullName: 'Matias Benegas',
-        });
-        await userRepo.save(sampleUser);
-        console.log('✅ Usuario de ejemplo creado.');
+        const businessRepo = data_source_1.AppDataSource.getRepository(business_entity_1.Business);
+        const membershipRepo = data_source_1.AppDataSource.getRepository(business_membership_entity_1.BusinessMembership);
+        const baseBusinesses = [
+            { name: 'Taller Impresión 3D Alfa', category: 'IMPRESIONES_3D' },
+            { name: 'Impresiones 3D Express', category: 'IMPRESIONES_3D' },
+            { name: 'PrintWorks 3D Studio', category: 'IMPRESIONES_3D' },
+            { name: 'Servicios Metalúrgicos', category: 'METALURGICA' },
+            { name: 'Carpintería Moderna', category: 'CARPINTERIA' },
+        ];
+        const createdBusinesses = [];
+        for (const base of baseBusinesses) {
+            let biz = await businessRepo.findOne({
+                where: { name: base.name, category: base.category }
+            });
+            if (!biz) {
+                biz = businessRepo.create({
+                    name: base.name,
+                    category: base.category,
+                });
+                biz = await businessRepo.save(biz);
+                console.log(`✅ Negocio creado: ${base.name} [${base.category}]`);
+            }
+            else {
+                console.log(`ℹ️ Negocio ya existe: ${base.name}`);
+            }
+            createdBusinesses.push(biz);
+        }
+        if (createdBusinesses.length < 2) {
+            console.warn('⚠️ Menos de 2 negocios encontrados/creados. Algunos otros seeds podrían fallar.');
+        }
+        const biz1 = createdBusinesses[0];
+        const biz2 = createdBusinesses[1];
+        console.log('ℹ️ Auto-vinculación de usuarios deshabilitada.');
         const dueSoon = new Date();
         dueSoon.setDate(dueSoon.getDate() + 1);
         const order1 = orderRepo.create({
