@@ -1,10 +1,16 @@
+'use client'
+
 import { OrdersKanban } from '@/src/components/OrdersKanban'
-import { MOCK_ORDERS } from '@/src/lib/mock-data'
 import { Button } from '@/src/components/ui/button'
 import { Plus, LayoutGrid, List } from 'lucide-react'
 import Link from 'next/link'
+import { usePedidos } from '@/src/context/PedidosContext'
+import { useNegocio } from '@/src/context/NegocioContext'
 
 export default function KanbanPage() {
+    const { pedidos } = usePedidos()
+    const { negocioActivoId } = useNegocio()
+    const orders = pedidos[negocioActivoId] || pedidos['n1'] || []
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -27,7 +33,7 @@ export default function KanbanPage() {
                 </div>
             </div>
 
-            <OrdersKanban orders={MOCK_ORDERS} />
+            <OrdersKanban orders={orders} />
         </div>
     )
 }

@@ -1,17 +1,47 @@
+import { createClient } from '@/lib/supabase/client'
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3030';
+const supabase = createClient()
+
+let isRedirectingToLogin = false;
 
 export async function fetchApi<T>(path: string, options: RequestInit = {}): Promise<T> {
     const url = `${API_URL}${path.startsWith('/') ? path : `/${path}`}`;
 
-    const headers = {
+    // 1. Intentar obtener token de la sesión de Supabase (más confiable que localStorage manual)
+    const { data: { session } } = await supabase.auth.getSession();
+    let token: string | null | undefined = session?.access_token;
+
+    // 2. Fallback a localStorage por compatibilidad
+    if (!token && typeof window !== 'undefined') {
+        token = localStorage.getItem('prodmanager_token');
+    }
+
+    const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        ...options.headers,
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        ...(options.headers as Record<string, string>),
     };
 
     const response = await fetch(url, {
         ...options,
         headers,
     });
+
+    if (response.status === 401) {
+        if (typeof window !== 'undefined' && !isRedirectingToLogin) {
+            const currentPath = window.location.pathname;
+
+            // Evitar loop si ya estamos en login o registración
+            if (currentPath !== '/login' && currentPath !== '/register') {
+                isRedirectingToLogin = true;
+                console.warn('[fetchApi] 401 Unauthorized -> redirect to /login');
+                const fullPath = currentPath + window.location.search;
+                window.location.href = `/login?next=${encodeURIComponent(fullPath)}`;
+            }
+        }
+        throw new Error('Sesión expirada. Redirigiendo...');
+    }
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -38,13 +68,45 @@ export const api = {
         }),
     },
     users: {
-        getMe: (token: string) => fetchApi('/me', {
-            headers: { 'Authorization': `Bearer ${token}` }
+        getMe: (token?: string) => fetchApi('/me', {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         }),
-        updateProfile: (token: string, data: { fullName?: string }) => fetchApi('/me', {
+        updateProfile: (token: string | null, data: { fullName?: string }) => fetchApi('/me', {
             method: 'PATCH',
-            headers: { 'Authorization': `Bearer ${token}` },
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
             body: JSON.stringify(data),
+        }),
+        setDefaultBusiness: (token: string | null, businessId: string) => fetchApi('/me/default-business', {
+            method: 'PUT',
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+            body: JSON.stringify({ businessId }),
+        }),
+    },
+    businesses: {
+        getAll: () => fetchApi('/businesses'),
+        getTemplates: () => fetchApi<any[]>('/business-templates'),
+        create: (templateKey: string) => fetchApi<any>('/businesses', {
+            method: 'POST',
+            body: JSON.stringify({ templateKey })
+        }),
+    },
+    customers: {
+        getAll: () => fetchApi('/customers'),
+        getOne: (id: string) => fetchApi(`/customers/${id}`),
+        create: (data: any) => fetchApi('/customers', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+        update: (id: string, data: any) => fetchApi(`/customers/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(data),
+        }),
+    },
+    printers: {
+        getAll: () => fetchApi('/printers'),
+        updateStatus: (id: string, status: string) => fetchApi(`/printers/${id}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status }),
         }),
     }
 };

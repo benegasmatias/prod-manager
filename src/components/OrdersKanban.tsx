@@ -1,4 +1,4 @@
-import { Order, OrderStatus } from '@/src/types'
+import { Pedido, OrderStatus } from '@/src/types'
 import { Card, CardContent } from '@/src/components/ui/card'
 import { BadgeUrgencia } from '@/src/components/BadgeUrgencia'
 import { Money } from '@/src/components/Money'
@@ -6,7 +6,7 @@ import { DateTag } from '@/src/components/DateTag'
 import { Badge } from '@/src/components/ui/badge'
 
 interface OrdersKanbanProps {
-    orders: Order[]
+    orders: Pedido[]
 }
 
 const COLUMNS: OrderStatus[] = ['Pendiente', 'En Producción', 'Parcial', 'Terminado', 'Entregado']
@@ -15,7 +15,7 @@ export function OrdersKanban({ orders }: OrdersKanbanProps) {
     return (
         <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-6 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x snap-mandatory lg:snap-none">
             {COLUMNS.map((status) => {
-                const columnOrders = orders.filter((o) => o.status === status)
+                const columnOrders = orders.filter((o) => o.estado === status)
                 return (
                     <div
                         key={status}
@@ -31,8 +31,8 @@ export function OrdersKanban({ orders }: OrdersKanbanProps) {
                                 <Card key={order.id} className="cursor-grab active:cursor-grabbing hover:border-zinc-300 dark:hover:border-zinc-600 transition-all shadow-sm">
                                     <CardContent className="p-3 sm:p-4 space-y-3">
                                         <div className="flex items-start justify-between">
-                                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">{order.orderNumber}</span>
-                                            <BadgeUrgencia urgencia={order.priority} />
+                                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">{order.numero}</span>
+                                            <BadgeUrgencia urgencia={order.urgencia} />
                                         </div>
 
                                         <p className="text-sm font-bold truncate">{order.clientName}</p>
@@ -40,7 +40,7 @@ export function OrdersKanban({ orders }: OrdersKanbanProps) {
                                         <div className="flex flex-col gap-1">
                                             {order.items.slice(0, 3).map(item => (
                                                 <p key={item.id} className="text-[11px] text-zinc-600 dark:text-zinc-400 truncate">
-                                                    • {item.productName} ({item.quantity}u)
+                                                    • {item.nombreProducto} ({item.cantidad}u)
                                                 </p>
                                             ))}
                                             {order.items.length > 3 && (
@@ -49,8 +49,8 @@ export function OrdersKanban({ orders }: OrdersKanbanProps) {
                                         </div>
 
                                         <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800 mt-2">
-                                            <DateTag date={order.deliveryDate} />
-                                            <Money amount={order.totalPrice} className="text-[11px] font-black" />
+                                            <DateTag date={new Date(order.fechaEntrega)} />
+                                            <Money amount={order.total} className="text-[11px] font-black" />
                                         </div>
                                     </CardContent>
                                 </Card>

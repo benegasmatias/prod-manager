@@ -18,6 +18,7 @@ export type ItemPedido = {
     nombreProducto: string
     descripcion?: string
     cantidad: number
+    quantityProduced: number // Added for compatibility with production views
     precioUnitario: number
     senia: number
     demoraEstimadaMinutos?: number
@@ -35,12 +36,15 @@ export type Pedido = {
     negocioId: string
     numero: string
     clienteId: string
+    clientName: string // Added for dashboard
     fechaCreacion: string
     fechaEntrega: string
     estado: OrderStatus
     observaciones?: string
     items: ItemPedido[]
     total: number
+    totalPrice: number // Added for compatibility
+    profit: number // Added for dashboard
     totalSenias: number
     saldo: number
     urgencia: Priority

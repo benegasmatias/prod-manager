@@ -3,17 +3,18 @@
 import { StatCard } from '@/src/components/StatCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card'
 import { ShoppingCart, TrendingUp, Users, AlertCircle } from 'lucide-react'
-import { MOCK_ORDERS_BY_NEGOCIO } from '@/src/lib/mock-data'
 import { BadgeUrgencia } from '@/src/components/BadgeUrgencia'
 import { Money } from '@/src/components/Money'
 import { Badge } from '@/src/components/ui/badge'
 import { useNegocio } from '@/src/context/NegocioContext'
+import { usePedidos } from '@/src/context/PedidosContext'
 
 export default function DashboardPage() {
     const { negocioActivoId } = useNegocio()
-    const orders = MOCK_ORDERS_BY_NEGOCIO[negocioActivoId] || []
+    const { pedidos } = usePedidos()
+    const orders = pedidos[negocioActivoId] || pedidos['n1'] || []
 
-    const activeOrders = orders.filter(o => o.status !== 'Entregado')
+    const activeOrders = orders.filter(o => o.estado !== 'Entregado')
     const totalSales = orders.reduce((acc, o) => acc + o.totalPrice, 0)
     const totalProfit = orders.reduce((acc, o) => acc + o.profit, 0)
 
@@ -64,12 +65,12 @@ export default function DashboardPage() {
                                 <div key={order.id} className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-100 pb-4 last:border-0 last:pb-0 dark:border-zinc-800 gap-3">
                                     <div className="space-y-1">
                                         <p className="text-sm font-semibold leading-none">{order.clientName}</p>
-                                        <p className="text-xs text-zinc-500">{order.orderNumber}</p>
+                                        <p className="text-xs text-zinc-500">{order.numero}</p>
                                     </div>
                                     <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
                                         <div className="flex items-center gap-2">
-                                            <BadgeUrgencia urgencia={order.priority} />
-                                            <Badge variant="outline" className="hidden xs:inline-flex">{order.status}</Badge>
+                                            <BadgeUrgencia urgencia={order.urgencia} />
+                                            <Badge variant="outline" className="hidden xs:inline-flex">{order.estado}</Badge>
                                         </div>
                                         <Money amount={order.totalPrice} className="text-sm font-bold" />
                                     </div>
@@ -87,7 +88,7 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {orders.some(o => o.priority === 'VENCIDO') && (
+                            {orders.some(o => o.urgencia === 'VENCIDO') && (
                                 <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-900/10">
                                     <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
                                     <div>

@@ -1,7 +1,8 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect } from 'react'
-import { Negocio, Rubro, NegocioConfig, getNegocioConfig } from '@/src/domain/negocio'
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { Negocio, Rubro, NegocioConfig, getNegocioConfig, mapCategoryToRubro } from '@/src/domain/negocio'
+import { api } from '@/src/lib/api'
 
 interface NegocioContextType {
     negocios: Negocio[]
@@ -9,15 +10,11 @@ interface NegocioContextType {
     negocioActivo: Negocio | undefined
     config: NegocioConfig
     setActivo: (id: string) => void
+    loadNegocios: () => Promise<void>
     addNegocio: (nombre: string, rubro: Rubro) => void
     updateNegocio: (id: string, nombre: string, rubro: Rubro) => void
     removeNegocio: (id: string) => void
 }
-
-const DEFAULT_NEGOCIOS: Negocio[] = [
-    { id: 'n1', nombre: 'Taller 3D Principal', rubro: 'IMPRESION_3D', createdAt: new Date().toISOString() },
-    { id: 'n2', nombre: 'Servicios Metalúrgicos', rubro: 'METALURGICA', createdAt: new Date().toISOString() },
-]
 
 const NegocioContext = createContext<NegocioContextType | undefined>(undefined)
 
@@ -26,36 +23,53 @@ export function NegocioProvider({ children }: { children: React.ReactNode }) {
     const [negocioActivoId, setNegocioActivoId] = useState<string>('')
     const [isInitialized, setIsInitialized] = useState(false)
 
-    useEffect(() => {
-        const savedNegocios = localStorage.getItem('prodmanager_negocios')
-        const savedActivo = localStorage.getItem('prodmanager_negocio_activo')
-
-        const initialNegocios = savedNegocios ? JSON.parse(savedNegocios) : DEFAULT_NEGOCIOS
-        const initialActivo = savedActivo || initialNegocios[0]?.id || ''
-
-        setNegocios(initialNegocios)
-        setNegocioActivoId(initialActivo)
-        setIsInitialized(true)
+    const loadNegocios = useCallback(async () => {
+        try {
+            const data: any = await api.businesses.getAll()
+            const mapped: Negocio[] = data.map((b: any) => ({
+                id: b.id,
+                nombre: b.name,
+                rubro: mapCategoryToRubro(b.category),
+                createdAt: b.createdAt
+            }))
+            setNegocios(mapped)
+        } catch (error) {
+            console.error('Error loading businesses in context:', error)
+            // fetchApi ya maneja el 401 redirigiendo, aquí solo fallamos silenciosamente o limpiamos
+            setNegocios([])
+        }
     }, [])
 
     useEffect(() => {
+        const init = async () => {
+            if (typeof window !== 'undefined') {
+                const path = window.location.pathname;
+                if (path === '/login' || path === '/register') {
+                    setIsInitialized(true);
+                    return;
+                }
+            }
+
+            const savedActivo = localStorage.getItem('prodmanager_negocio_activo')
+            await loadNegocios()
+            if (savedActivo) setNegocioActivoId(savedActivo)
+            setIsInitialized(true)
+        }
+        init()
+    }, [loadNegocios])
+
+    useEffect(() => {
         if (isInitialized) {
-            localStorage.setItem('prodmanager_negocios', JSON.stringify(negocios))
             localStorage.setItem('prodmanager_negocio_activo', negocioActivoId)
         }
-    }, [negocios, negocioActivoId, isInitialized])
+    }, [negocioActivoId, isInitialized])
 
     const setActivo = (id: string) => setNegocioActivoId(id)
 
     const addNegocio = (nombre: string, rubro: Rubro) => {
-        const newNegocio: Negocio = {
-            id: 'n-' + Math.random().toString(36).substring(2, 9),
-            nombre,
-            rubro,
-            createdAt: new Date().toISOString()
-        }
-        setNegocios([...negocios, newNegocio])
-        setNegocioActivoId(newNegocio.id)
+        // TODO: Implementar creación real en Backend
+        console.warn('addNegocio no implementado: requiere persistencia en Backend.')
+        throw new Error('La creación de negocios debe realizarse desde el panel de configuración (No implementado en cliente aún).')
     }
 
     const updateNegocio = (id: string, nombre: string, rubro: Rubro) => {
@@ -71,7 +85,7 @@ export function NegocioProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    const negocioActivo = negocios.find(n => n.id === negocioActivoId) || negocios[0]
+    const negocioActivo = negocios.find(n => n.id === negocioActivoId)
     const config = getNegocioConfig(negocioActivo?.rubro || 'GENERICO')
 
     return (
@@ -81,6 +95,7 @@ export function NegocioProvider({ children }: { children: React.ReactNode }) {
             negocioActivo,
             config,
             setActivo,
+            loadNegocios,
             addNegocio,
             updateNegocio,
             removeNegocio

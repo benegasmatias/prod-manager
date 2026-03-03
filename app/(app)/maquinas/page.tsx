@@ -1,14 +1,42 @@
 'use client'
 
 import { MachineGrid } from '@/src/components/MachineGrid'
-import { MOCK_MACHINES_BY_NEGOCIO } from '@/src/lib/mock-data'
 import { Button } from '@/src/components/ui/button'
 import { Plus } from 'lucide-react'
 import { useNegocio } from '@/src/context/NegocioContext'
+import { useState, useEffect } from 'react'
+import { api } from '@/src/lib/api'
+import { Machine, MachineStatus } from '@/src/types'
 
 export default function MachinesPage() {
     const { negocioActivoId, negocioActivo } = useNegocio()
-    const machines = MOCK_MACHINES_BY_NEGOCIO[negocioActivoId] || []
+    const [machines, setMachines] = useState<Machine[]>([])
+
+    useEffect(() => {
+        async function loadMachines() {
+            try {
+                const data: any = await api.printers.getAll()
+                const mapped: Machine[] = data.map((p: any) => {
+                    let estado: MachineStatus = 'Libre'
+                    if (p.status === 'PRINTING') estado = 'Ocupada'
+                    if (p.status === 'MAINTENANCE' || p.status === 'DOWN') estado = 'Mantenimiento'
+
+                    return {
+                        id: p.id,
+                        negocioId: 'n1',
+                        nombre: p.name,
+                        tipo: p.model || 'FDM',
+                        estado: estado,
+                        ultimoMantenimiento: p.createdAt
+                    }
+                })
+                setMachines(mapped)
+            } catch (error) {
+                console.error('Error fetching machines:', error)
+            }
+        }
+        loadMachines()
+    }, [])
 
     if (negocioActivo?.rubro !== 'IMPRESION_3D') {
         return (

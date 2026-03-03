@@ -63,3 +63,20 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
             };
     }
 }
+export function mapCategoryToRubro(category?: string): Rubro {
+    if (!category) return 'GENERICO';
+
+    const cat = category.toUpperCase().trim();
+
+    // Mapeo flexible para variaciones comunes
+    if (cat.includes('3D') || cat.includes('IMPRESION')) return 'IMPRESION_3D';
+    if (cat.includes('MET') || cat.includes('HIERRO')) return 'METALURGICA';
+    if (cat.includes('CARP') || cat.includes('MADERA')) return 'CARPINTERIA';
+
+    // Si coincide exactamente con el enum
+    if (['IMPRESION_3D', 'METALURGICA', 'CARPINTERIA', 'GENERICO'].includes(cat)) {
+        return cat as Rubro;
+    }
+
+    return 'GENERICO';
+}

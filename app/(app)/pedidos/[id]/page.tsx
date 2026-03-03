@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { MOCK_ORDERS_BY_NEGOCIO } from '@/src/lib/mock-data'
-import { Order, OrderItem } from '@/src/types'
+import { Pedido, ItemPedido } from '@/src/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card'
 import { BadgeUrgencia } from '@/src/components/BadgeUrgencia'
 import { Badge } from '@/src/components/ui/badge'
@@ -13,22 +12,24 @@ import { ArrowLeft, Save, Printer, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { Input } from '@/src/components/ui/input'
 import { useNegocio } from '@/src/context/NegocioContext'
+import { usePedidos } from '@/src/context/PedidosContext'
 
 export default function OrderDetailPage() {
     const { id } = useParams()
     const { config, negocioActivoId, negocioActivo } = useNegocio()
-    const [order, setOrder] = useState<Order | null>(null)
-    const [items, setItems] = useState<OrderItem[]>([])
+    const { pedidos } = usePedidos()
+    const [order, setOrder] = useState<Pedido | null>(null)
+    const [items, setItems] = useState<any[]>([])
 
     useEffect(() => {
-        const businessOrders = MOCK_ORDERS_BY_NEGOCIO[negocioActivoId] || []
+        const businessOrders = pedidos[negocioActivoId] || pedidos['n1'] || []
         const foundOrder = businessOrders.find(o => o.id === id)
 
         if (foundOrder) {
             setOrder(foundOrder)
             setItems([...foundOrder.items])
         }
-    }, [id, negocioActivoId])
+    }, [id, negocioActivoId, pedidos])
 
     if (!order) return <div className="p-8 text-center text-zinc-500">Cargando pedido o pedido no encontrado...</div>
 
@@ -48,7 +49,7 @@ export default function OrderDetailPage() {
                         </Button>
                     </Link>
                     <div>
-                        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Pedido: {order.orderNumber}</h1>
+                        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Pedido: {order.numero}</h1>
                         <p className="text-xs sm:text-sm text-zinc-500">{order.clientName}</p>
                     </div>
                 </div>
@@ -73,7 +74,7 @@ export default function OrderDetailPage() {
                             <div className="space-y-10 sm:space-y-12">
                                 {items.map((item) => (
                                     <div key={item.id} className="space-y-5 border-b border-zinc-100 pb-10 last:border-0 last:pb-0 dark:border-zinc-800">
-                                        <h4 className="font-black text-sm uppercase tracking-wider text-zinc-900 dark:text-zinc-100">{item.productName}</h4>
+                                        <h4 className="font-black text-sm uppercase tracking-wider text-zinc-900 dark:text-zinc-100">{item.nombreProducto}</h4>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                                             {config.itemFields.map(campo => {
@@ -99,7 +100,7 @@ export default function OrderDetailPage() {
                                                 <div className="flex items-center justify-between mb-3 px-1">
                                                     <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Progreso de fabricación</label>
                                                     <Badge variant="outline" className="text-[10px] font-bold">
-                                                        {Math.round((item.quantityProduced / item.quantity) * 100)}%
+                                                        {Math.round((item.quantityProduced / item.cantidad) * 100)}%
                                                     </Badge>
                                                 </div>
                                                 <div className="flex items-center gap-4">
@@ -115,7 +116,7 @@ export default function OrderDetailPage() {
                                                     <div className="h-2.5 flex-1 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden shadow-inner">
                                                         <div
                                                             className="h-full bg-emerald-500 transition-all duration-500 ease-in-out relative"
-                                                            style={{ width: `${Math.min(100, (item.quantityProduced / item.quantity) * 100)}%` }}
+                                                            style={{ width: `${Math.min(100, (item.quantityProduced / item.cantidad) * 100)}%` }}
                                                         >
                                                             <div className="absolute inset-0 bg-white/20 animate-pulse" />
                                                         </div>
@@ -138,11 +139,11 @@ export default function OrderDetailPage() {
                             <CardContent className="space-y-4">
                                 <div className="flex justify-between items-center text-sm py-1 border-b border-zinc-50 dark:border-zinc-900">
                                     <span className="text-zinc-500 font-medium">Estado</span>
-                                    <Badge className="font-bold">{order.status}</Badge>
+                                    <Badge className="font-bold">{order.estado}</Badge>
                                 </div>
                                 <div className="flex justify-between items-center text-sm py-1 border-b border-zinc-50 dark:border-zinc-900">
                                     <span className="text-zinc-500 font-medium">Prioridad</span>
-                                    <BadgeUrgencia urgencia={order.priority} />
+                                    <BadgeUrgencia urgencia={order.urgencia} />
                                 </div>
                                 <div className="flex justify-between items-center text-sm py-1">
                                     <span className="text-zinc-500 font-medium">Rubro Aplicado</span>
