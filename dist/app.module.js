@@ -6,11 +6,10 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AppModule = exports.createSupabaseDbConfig = void 0;
+exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const typeorm_1 = require("@nestjs/typeorm");
-const nestjs_cls_1 = require("nestjs-cls");
 const customers_module_1 = require("./customers/customers.module");
 const products_module_1 = require("./products/products.module");
 const orders_module_1 = require("./orders/orders.module");
@@ -18,20 +17,7 @@ const jobs_module_1 = require("./jobs/jobs.module");
 const payments_module_1 = require("./payments/payments.module");
 const printers_module_1 = require("./printers/printers.module");
 const materials_module_1 = require("./materials/materials.module");
-const createSupabaseDbConfig = (config) => ({
-    type: 'postgres',
-    host: config.get('DB_SUPABASE_HOST'),
-    port: Number(config.get('DB_SUPABASE_PORT')),
-    username: config.get('DB_SUPABASE_USERNAME'),
-    password: config.get('DB_SUPABASE_PASSWORD'),
-    database: config.get('DB_SUPABASE_NAME'),
-    autoLoadEntities: true,
-    synchronize: false,
-    ssl: {
-        rejectUnauthorized: false,
-    },
-});
-exports.createSupabaseDbConfig = createSupabaseDbConfig;
+const users_module_1 = require("./users/users.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -40,15 +26,22 @@ exports.AppModule = AppModule = __decorate([
         imports: [
             config_1.ConfigModule.forRoot({
                 isGlobal: true,
-                envFilePath: '.env',
-            }),
-            nestjs_cls_1.ClsModule.forRoot({
-                global: true,
-                middleware: { mount: true },
             }),
             typeorm_1.TypeOrmModule.forRootAsync({
+                imports: [config_1.ConfigModule],
                 inject: [config_1.ConfigService],
-                useFactory: (configService) => (0, exports.createSupabaseDbConfig)(configService),
+                useFactory: (configService) => ({
+                    type: 'postgres',
+                    url: configService.get('DATABASE_URL'),
+                    autoLoadEntities: true,
+                    synchronize: false,
+                    ssl: configService.get('DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
+                    extra: {
+                        max: 20,
+                        idleTimeoutMillis: 30000,
+                        connectionTimeoutMillis: 2000,
+                    }
+                }),
             }),
             customers_module_1.CustomersModule,
             products_module_1.ProductsModule,
@@ -57,6 +50,7 @@ exports.AppModule = AppModule = __decorate([
             payments_module_1.PaymentsModule,
             printers_module_1.PrintersModule,
             materials_module_1.MaterialsModule,
+            users_module_1.UsersModule,
         ],
     })
 ], AppModule);

@@ -43,7 +43,7 @@ let JobsService = class JobsService {
         const fullJob = await this.findOne(savedJob.id);
         const order = fullJob.order;
         if (order.status === enums_1.OrderStatus.DRAFT || order.status === enums_1.OrderStatus.CONFIRMED) {
-            await this.ordersService.updateStatus(order.id, enums_1.OrderStatus.IN_PROGRESS, 'Production jobs started.');
+            await this.ordersService.updateStatus(order.id, { status: enums_1.OrderStatus.IN_PROGRESS, notes: 'Production jobs started.' });
         }
         return fullJob;
     }
@@ -54,9 +54,9 @@ let JobsService = class JobsService {
             },
             relations: ['order', 'orderItem', 'orderItem.product', 'printer', 'material'],
             order: {
-                priority: 'DESC',
+                order: { priority: 'DESC' },
+                dueDate: 'ASC',
                 sortRank: 'ASC',
-                order: { dueDate: 'ASC' },
             },
         });
     }
@@ -87,7 +87,6 @@ let JobsService = class JobsService {
         });
         await this.statusHistoryRepository.save(history);
         if (status === enums_1.JobStatus.DONE) {
-            await this.ordersService.checkAndSetReadyStatus(job.orderId);
         }
         return this.findOne(id);
     }

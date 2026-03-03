@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Order } from '../../orders/entities/order.entity';
 import { OrderStatus } from '../../common/enums';
 
@@ -10,19 +10,19 @@ export class OrderStatusHistory {
     @Column({ name: 'order_id' })
     orderId: string;
 
-    @ManyToOne(() => Order, (order) => order.statusHistory)
+    @ManyToOne(() => Order, (order) => order.statusHistory, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'order_id' })
     order: Order;
 
-    @Column({ type: 'enum', enum: OrderStatus, nullable: true })
+    @CreateDateColumn({ name: 'changed_at' })
+    changedAt: Date;
+
+    @Column({ name: 'from_status', type: 'enum', enum: OrderStatus, nullable: true })
     fromStatus: OrderStatus;
 
-    @Column({ type: 'enum', enum: OrderStatus })
+    @Column({ name: 'to_status', type: 'enum', enum: OrderStatus })
     toStatus: OrderStatus;
 
-    @Column({ nullable: true })
+    @Column({ type: 'text', nullable: true })
     note: string;
-
-    @CreateDateColumn({ name: 'created_at' })
-    createdAt: Date;
 }

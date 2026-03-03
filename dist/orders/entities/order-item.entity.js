@@ -26,10 +26,42 @@ __decorate([
     __metadata("design:type", String)
 ], OrderItem.prototype, "orderId", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => order_entity_1.Order, (order) => order.items),
+    (0, typeorm_1.ManyToOne)(() => order_entity_1.Order, (order) => order.items, { onDelete: 'CASCADE' }),
     (0, typeorm_1.JoinColumn)({ name: 'order_id' }),
     __metadata("design:type", order_entity_1.Order)
 ], OrderItem.prototype, "order", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], OrderItem.prototype, "name", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], OrderItem.prototype, "description", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'stl_url', nullable: true }),
+    __metadata("design:type", String)
+], OrderItem.prototype, "stlUrl", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'estimated_minutes', type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], OrderItem.prototype, "estimatedMinutes", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'weight_grams', type: 'float', default: 0 }),
+    __metadata("design:type", Number)
+], OrderItem.prototype, "weightGrams", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 12, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], OrderItem.prototype, "price", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'int', default: 1 }),
+    __metadata("design:type", Number)
+], OrderItem.prototype, "qty", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'done_qty', type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], OrderItem.prototype, "doneQty", void 0);
 __decorate([
     (0, typeorm_1.Column)({ name: 'product_id', nullable: true }),
     __metadata("design:type", String)
@@ -40,13 +72,21 @@ __decorate([
     __metadata("design:type", product_entity_1.Product)
 ], OrderItem.prototype, "product", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
-    __metadata("design:type", Number)
-], OrderItem.prototype, "quantity", void 0);
-__decorate([
     (0, typeorm_1.OneToMany)(() => production_job_entity_1.ProductionJob, (job) => job.orderItem),
     __metadata("design:type", Array)
 ], OrderItem.prototype, "productionJobs", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'unit_price', type: 'decimal', precision: 12, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], OrderItem.prototype, "unitPrice", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 12, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], OrderItem.prototype, "subtotal", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], OrderItem.prototype, "notes", void 0);
 exports.OrderItem = OrderItem = __decorate([
     (0, typeorm_1.Entity)('order_items')
 ], OrderItem);

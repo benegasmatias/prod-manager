@@ -9,6 +9,15 @@ export class Printer {
     @Column()
     name: string;
 
+    @Column({ nullable: true })
+    model: string;
+
+    @Column({ nullable: true })
+    nozzle: string;
+
+    @Column({ default: true })
+    active: boolean;
+
     @OneToMany(() => ProductionJob, (job) => job.printer)
     productionJobs: ProductionJob[];
 }

@@ -40,7 +40,7 @@ export class JobsService {
 
         // Automatically transition order to IN_PROGRESS if it was CONFIRMED or DRAFT
         if (order.status === OrderStatus.DRAFT || order.status === OrderStatus.CONFIRMED) {
-            await this.ordersService.updateStatus(order.id, OrderStatus.IN_PROGRESS, 'Production jobs started.');
+            await this.ordersService.updateStatus(order.id, { status: OrderStatus.IN_PROGRESS, notes: 'Production jobs started.' });
         }
 
         return fullJob;
@@ -53,9 +53,9 @@ export class JobsService {
             },
             relations: ['order', 'orderItem', 'orderItem.product', 'printer', 'material'],
             order: {
-                priority: 'DESC',
+                order: { priority: 'DESC' },
+                dueDate: 'ASC',
                 sortRank: 'ASC',
-                order: { dueDate: 'ASC' },
             },
         });
     }
@@ -90,7 +90,7 @@ export class JobsService {
         await this.statusHistoryRepository.save(history);
 
         if (status === JobStatus.DONE) {
-            await this.ordersService.checkAndSetReadyStatus(job.orderId);
+            // await this.ordersService.checkAndSetReadyStatus(job.orderId);
         }
 
         return this.findOne(id);

@@ -9,7 +9,7 @@ export class JobProgress {
     @Column({ name: 'production_job_id' })
     productionJobId: string;
 
-    @ManyToOne(() => ProductionJob, (job: ProductionJob) => job.progress, { onDelete: 'CASCADE' })
+    @ManyToOne(() => ProductionJob, (job) => job.progress, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'production_job_id' })
     productionJob: ProductionJob;
 

@@ -1,38 +1,32 @@
-import { Controller, Get, Post, Body, Patch, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, ParseUUIDPipe } from '@nestjs/common';
 import { OrdersService } from './orders.service';
-import { CreateOrderDto, FilterOrderDto, UpdateOrderDto } from './dto/order.dto';
-import { OrderStatus } from '../common/enums';
+import { CreateOrderDto, UpdateProgressDto } from './dto/order.dto';
 
 @Controller('orders')
 export class OrdersController {
     constructor(private readonly ordersService: OrdersService) { }
 
-    @Post()
-    create(@Body() createOrderDto: CreateOrderDto) {
-        return this.ordersService.create(createOrderDto);
-    }
-
     @Get()
-    findAll(@Query() filters: FilterOrderDto) {
-        return this.ordersService.findAll(filters);
+    async findAll() {
+        return this.ordersService.findAll();
     }
 
     @Get(':id')
-    findOne(@Param('id') id: string) {
+    async findOne(@Param('id', ParseUUIDPipe) id: string) {
         return this.ordersService.findOne(id);
     }
 
-    @Patch(':id/status')
-    updateStatus(
-        @Param('id') id: string,
-        @Body('status') status: OrderStatus,
-        @Body('notes') notes?: string,
-    ) {
-        return this.ordersService.updateStatus(id, status, notes);
+    @Post()
+    async create(@Body() createOrderDto: CreateOrderDto) {
+        return this.ordersService.create(createOrderDto);
     }
 
-    @Patch(':id')
-    update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
-        return this.ordersService.update(id, updateOrderDto);
+    @Patch(':orderId/items/:itemId/progress')
+    async updateProgress(
+        @Param('orderId', ParseUUIDPipe) orderId: string,
+        @Param('itemId', ParseUUIDPipe) itemId: string,
+        @Body() updateProgressDto: UpdateProgressDto,
+    ) {
+        return this.ordersService.updateProgress(orderId, itemId, updateProgressDto);
     }
 }

@@ -1,22 +1,46 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Customer } from '../../customers/entities/customer.entity';
 import { OrderItem } from './order-item.entity';
+import { OrderStatus } from '../../common/enums';
 import { ProductionJob } from '../../jobs/entities/production-job.entity';
 import { OrderStatusHistory } from '../../history/entities/order-status-history.entity';
-import { OrderStatus } from '../../common/enums';
+import { Payment } from '../../payments/entities/payment.entity';
 
 @Entity('orders')
 export class Order {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.DRAFT })
+    @Column({ name: 'client_name', nullable: true })
+    clientName: string;
+
+    @Column({ name: 'due_date' })
+    dueDate: Date;
+
+    @Column({ type: 'int', default: 1 })
+    priority: number;
+
+    @Column({
+        type: 'enum',
+        enum: OrderStatus,
+        default: OrderStatus.PENDING
+    })
     status: OrderStatus;
 
-    @Column()
-    clientId: string;
+    @CreateDateColumn({ name: 'created_at' })
+    createdAt: Date;
 
-    @OneToMany(() => OrderItem, (item) => item.order)
+    // --- Relationships (kept for compatibility and app integrity) ---
+
+    @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
     items: OrderItem[];
+
+    @Column({ name: 'customer_id', nullable: true })
+    customerId: string;
+
+    @ManyToOne(() => Customer, (customer) => customer.orders)
+    @JoinColumn({ name: 'customer_id' })
+    customer: Customer;
 
     @OneToMany(() => ProductionJob, (job) => job.order)
     jobs: ProductionJob[];
@@ -24,9 +48,15 @@ export class Order {
     @OneToMany(() => OrderStatusHistory, (history) => history.order)
     statusHistory: OrderStatusHistory[];
 
-    @CreateDateColumn({ name: 'created_at' })
-    createdAt: Date;
+    @OneToMany(() => Payment, (payment) => payment.order)
+    payments: Payment[];
 
-    @Column({ name: 'due_date', nullable: true })
-    dueDate: Date;
+    @Column({ name: 'total_price', type: 'decimal', precision: 12, scale: 2, default: 0 })
+    totalPrice: number;
+
+    @Column({ type: 'text', nullable: true })
+    notes: string;
+
+    @Column({ unique: true, nullable: true })
+    code: string;
 }

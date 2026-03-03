@@ -1,9 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Order } from '../../orders/entities/order.entity';
 import { OrderItem } from '../../orders/entities/order-item.entity';
 import { Printer } from '../../printers/entities/printer.entity';
 import { Material } from '../../materials/entities/material.entity';
-import { JobStatus, Priority } from '../../common/enums';
+import { JobStatus } from '../../common/enums';
 import { JobProgress } from './job-progress.entity';
 import { JobStatusHistory } from '../../history/entities/job-status-history.entity';
 
@@ -64,15 +64,9 @@ export class ProductionJob {
     @Column({ name: 'sort_rank', default: 0 })
     sortRank: number;
 
-    @Column({ type: 'enum', enum: Priority, default: Priority.NORMAL })
-    priority: Priority;
-
-    @CreateDateColumn({ name: 'created_at' })
-    createdAt: Date;
-
     @OneToMany(() => JobProgress, (progress) => progress.productionJob)
     progress: JobProgress[];
 
-    @OneToMany(() => JobStatusHistory, (history: JobStatusHistory) => history.productionJob)
+    @OneToMany(() => JobStatusHistory, (history) => history.productionJob)
     statusHistory: JobStatusHistory[];
 }

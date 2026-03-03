@@ -94,14 +94,6 @@ __decorate([
     __metadata("design:type", Number)
 ], ProductionJob.prototype, "sortRank", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'enum', enum: enums_1.Priority, default: enums_1.Priority.NORMAL }),
-    __metadata("design:type", String)
-], ProductionJob.prototype, "priority", void 0);
-__decorate([
-    (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
-    __metadata("design:type", Date)
-], ProductionJob.prototype, "createdAt", void 0);
-__decorate([
     (0, typeorm_1.OneToMany)(() => job_progress_entity_1.JobProgress, (progress) => progress.productionJob),
     __metadata("design:type", Array)
 ], ProductionJob.prototype, "progress", void 0);
