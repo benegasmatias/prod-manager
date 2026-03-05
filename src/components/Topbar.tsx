@@ -130,14 +130,31 @@ export function Topbar() {
         }
     }
 
-    const handleSave = () => {
-        if (!formNombre) return
-        if (editingId) {
-            updateNegocio(editingId, formNombre, formRubro)
-        } else {
-            addNegocio(formNombre, formRubro)
+    const [isSavingBusiness, setIsSavingBusiness] = useState(false)
+
+    const handleSave = async () => {
+        if (!formNombre) {
+            toast.error('El nombre es obligatorio')
+            return
         }
-        setIsDialogOpen(false)
+
+        setIsSavingBusiness(true)
+        try {
+            if (editingId) {
+                await updateNegocio(editingId, formNombre, formRubro)
+                setIsDialogOpen(false)
+            } else {
+                const result = await addNegocio(formNombre, formRubro)
+                if (result?.business?.id) {
+                    setActivo(result.business.id)
+                }
+                setIsDialogOpen(false)
+            }
+        } catch (error) {
+            // Error already toasted in context
+        } finally {
+            setIsSavingBusiness(false)
+        }
     }
 
     return (
@@ -298,8 +315,10 @@ export function Topbar() {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-                        <Button onClick={handleSave}>Guardar Negocio</Button>
+                        <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSavingBusiness}>Cancelar</Button>
+                        <Button onClick={handleSave} disabled={isSavingBusiness}>
+                            {isSavingBusiness ? 'Guardando...' : 'Guardar Negocio'}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

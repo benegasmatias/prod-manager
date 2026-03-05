@@ -5,9 +5,13 @@ import { Cpu, Play, Settings, AlertTriangle } from 'lucide-react'
 
 interface MachineGridProps {
     machines: Machine[]
+    onAssign: (id: string) => void
+    onRelease: (id: string) => void
+    onDetail: (id: string) => void
+    isSubmitting?: boolean
 }
 
-export function MachineGrid({ machines }: MachineGridProps) {
+export function MachineGrid({ machines, onAssign, onRelease, onDetail, isSubmitting }: MachineGridProps) {
     return (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {machines.map((machine) => {
@@ -36,7 +40,7 @@ export function MachineGrid({ machines }: MachineGridProps) {
                                     {machine.status === 'Ocupada' ? (
                                         <>
                                             <Play className="h-3 w-3 text-emerald-500 fill-emerald-500" />
-                                            <span>Trabajando en: <span className="font-bold">{machine.currentJobId}</span></span>
+                                            <span>Trabajando en: <span className="font-bold">{machine.currentJobId || 'Pedido activo'}</span></span>
                                         </>
                                     ) : machine.status === 'Mantenimiento' ? (
                                         <>
@@ -47,27 +51,31 @@ export function MachineGrid({ machines }: MachineGridProps) {
                                         <span className="text-zinc-400 italic">Esperando trabajo...</span>
                                     )}
                                 </div>
-
-                                <div className="space-y-1">
-                                    <p className="text-xs text-zinc-500 font-medium">Próximos en cola ({machine.queue.length}):</p>
-                                    {machine.queue.length > 0 ? (
-                                        <div className="flex gap-2">
-                                            {machine.queue.map(jobId => (
-                                                <Badge key={jobId} variant="outline" className="text-[10px]">{jobId}</Badge>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <p className="text-[10px] text-zinc-400 italic">Cola vacía</p>
-                                    )}
-                                </div>
                             </div>
 
                             <div className="mt-6 flex gap-2">
-                                <button className="flex-1 rounded border py-1.5 text-xs font-bold hover:bg-zinc-50 dark:hover:bg-zinc-900">
-                                    Ver Detalles
-                                </button>
-                                <button className="flex-1 rounded border py-1.5 text-xs font-bold hover:bg-zinc-50 dark:hover:bg-zinc-900">
-                                    Cambiar Estado
+                                {machine.status === 'Libre' ? (
+                                    <button
+                                        disabled={isSubmitting}
+                                        onClick={() => onAssign(machine.id)}
+                                        className="flex-1 rounded-md bg-zinc-900 py-2 text-xs font-bold text-white hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Asignar Pedido
+                                    </button>
+                                ) : (
+                                    <button
+                                        disabled={isSubmitting}
+                                        onClick={() => onRelease(machine.id)}
+                                        className="flex-1 rounded-md border border-zinc-200 py-2 text-xs font-bold hover:bg-zinc-50 transition-colors dark:border-zinc-800 dark:hover:bg-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isSubmitting ? 'Procesando...' : 'Finalizar / Liberar'}
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => onDetail(machine.id)}
+                                    className="rounded-md border border-zinc-200 px-3 py-2 text-xs font-bold hover:bg-zinc-50 transition-colors dark:border-zinc-800 dark:hover:bg-zinc-900"
+                                >
+                                    Detalles
                                 </button>
                             </div>
                         </CardContent>

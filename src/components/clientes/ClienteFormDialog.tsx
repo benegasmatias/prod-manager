@@ -16,26 +16,42 @@ const Label = ({ children, htmlFor, className = "" }: any) => <label htmlFor={ht
 interface ClienteFormDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
-    onSave: (data: any) => void
+    onSave: (data: any) => Promise<void>
+    initialData?: {
+        id: string
+        nombre: string
+        email?: string
+        telefono?: string
+        notas?: string
+    } | null
 }
 
-export function ClienteFormDialog({ open, onOpenChange, onSave }: ClienteFormDialogProps) {
-    const [nombre, setNombre] = useState('')
-    const [email, setEmail] = useState('')
-    const [telefono, setTelefono] = useState('')
-    const [notas, setNotas] = useState('')
-    const [errors, setErrors] = useState<Record<string, string>>({})
-    const [isSubmitting, setIsSubmitting] = useState(false)
+export function ClienteFormDialog({ open, onOpenChange, onSave, initialData }: ClienteFormDialogProps) {
+    const [nombre, setNombre] = React.useState('')
+    const [email, setEmail] = React.useState('')
+    const [telefono, setTelefono] = React.useState('')
+    const [notas, setNotas] = React.useState('')
+    const [errors, setErrors] = React.useState<Record<string, string>>({})
+    const [isSubmitting, setIsSubmitting] = React.useState(false)
 
-    const handleOpenChange = (newOpen: boolean) => {
-        if (!newOpen) {
-            // Reset state on close
-            setNombre('')
-            setEmail('')
-            setTelefono('')
-            setNotas('')
+    React.useEffect(() => {
+        if (open) {
+            if (initialData) {
+                setNombre(initialData.nombre || '')
+                setEmail(initialData.email || '')
+                setTelefono(initialData.telefono || '')
+                setNotas(initialData.notas || '')
+            } else {
+                setNombre('')
+                setEmail('')
+                setTelefono('')
+                setNotas('')
+            }
             setErrors({})
         }
+    }, [open, initialData])
+
+    const handleOpenChange = (newOpen: boolean) => {
         onOpenChange(newOpen)
     }
 
@@ -55,15 +71,15 @@ export function ClienteFormDialog({ open, onOpenChange, onSave }: ClienteFormDia
         setIsSubmitting(true)
 
         try {
-            // simulate network request for feedback
-            await new Promise(resolve => setTimeout(resolve, 400))
-            onSave({
+            await onSave({
                 nombre: nombre.trim(),
                 email: email.trim() || undefined,
                 telefono: telefono.trim() || undefined,
                 notas: notas.trim() || undefined
             })
             handleOpenChange(false)
+        } catch (error) {
+            console.error('Error saving customer:', error)
         } finally {
             setIsSubmitting(false)
         }
@@ -73,9 +89,9 @@ export function ClienteFormDialog({ open, onOpenChange, onSave }: ClienteFormDia
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Nuevo Cliente</DialogTitle>
+                    <DialogTitle>{initialData ? 'Editar Cliente' : 'Nuevo Cliente'}</DialogTitle>
                     <DialogDescription>
-                        Agregá un nuevo cliente a la base de datos de este negocio.
+                        {initialData ? 'Modificá los datos del cliente seleccionado.' : 'Agregá un nuevo cliente a la base de datos de este negocio.'}
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -106,7 +122,7 @@ export function ClienteFormDialog({ open, onOpenChange, onSave }: ClienteFormDia
                             Cancelar
                         </Button>
                         <Button type="submit" disabled={isSubmitting}>
-                            {isSubmitting ? 'Guardando...' : 'Guardar Cliente'}
+                            {isSubmitting ? 'Guardando...' : initialData ? 'Actualizar' : 'Guardar Cliente'}
                         </Button>
                     </DialogFooter>
                 </form>

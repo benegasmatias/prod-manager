@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useNegocio } from '@/src/context/NegocioContext'
 import { api } from '@/src/lib/api'
@@ -11,6 +11,8 @@ export function BusinessGuard({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
     const [isChecking, setIsChecking] = useState(true)
 
+    const lastVerifiedId = useRef<string | null>(null)
+
     useEffect(() => {
         // Rutas públicas exceptuadas del guard
         if (pathname === '/login' || pathname === '/register') {
@@ -19,6 +21,12 @@ export function BusinessGuard({ children }: { children: React.ReactNode }) {
         }
 
         async function verifyAccess() {
+            // Evitar re-verificación si ya tenemos el negocio activo y no estamos en selección
+            if (negocioActivoId && lastVerifiedId.current === negocioActivoId && pathname !== '/select-business') {
+                setIsChecking(false)
+                return
+            }
+
             try {
                 // Obtenemos perfil y lista para validación fresca
                 const [profile, bizList] = await Promise.all([
@@ -45,8 +53,9 @@ export function BusinessGuard({ children }: { children: React.ReactNode }) {
                 }
 
                 // Seteamos activo si estamos entrando a una ruta protegida con acceso válido
-                if (hasValidBusiness && negocioActivoId !== defaultId) {
-                    setActivo(defaultId as string)
+                if (hasValidBusiness) {
+                    lastVerifiedId.current = defaultId
+                    if (negocioActivoId !== defaultId) setActivo(defaultId as string)
                 }
 
                 setIsChecking(false)

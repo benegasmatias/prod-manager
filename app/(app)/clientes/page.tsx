@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import {
     Table,
     TableBody,
@@ -10,7 +10,7 @@ import {
     TableRow
 } from '@/src/components/ui/table'
 import { Button } from '@/src/components/ui/button'
-import { Plus, Search, ExternalLink, Phone, Mail, User, DollarSign, Wallet } from 'lucide-react'
+import { Plus, Search, ExternalLink, Phone, Mail, User, DollarSign, Wallet, Pencil } from 'lucide-react'
 import Link from 'next/link'
 import { useNegocio } from '@/src/context/NegocioContext'
 import { useClientes, Cliente } from '@/src/context/ClientesContext'
@@ -18,7 +18,7 @@ import { ClienteFormDialog } from '@/src/components/clientes/ClienteFormDialog'
 
 export default function ClientsPage() {
     const { negocioActivoId } = useNegocio()
-    const { clientes, addCliente } = useClientes()
+    const { clientes, addCliente, updateCliente, refresh, loading } = useClientes()
 
     // Lst de clientes para este negocio usando useMemo
     const currentClients = useMemo(() => {
@@ -27,18 +27,41 @@ export default function ClientsPage() {
 
     const [searchTerm, setSearchTerm] = useState('')
     const [isFormOpen, setIsFormOpen] = useState(false)
+    const [editingClient, setEditingClient] = useState<Cliente | null>(null)
 
-    const filteredClients = useMemo(() => {
-        const lowerTerm = searchTerm.toLowerCase()
-        return currentClients.filter(c =>
-            c.nombre.toLowerCase().includes(lowerTerm) ||
-            (c.email && c.email.toLowerCase().includes(lowerTerm)) ||
-            (c.telefono && c.telefono.includes(lowerTerm))
-        )
-    }, [currentClients, searchTerm])
+    const isFirstRun = useRef(true)
+
+    // Buscador con Debounce para el backend
+    useEffect(() => {
+        // Evitar doble fetch al montar si el buscador está vacío (ya lo hace el Context)
+        if (isFirstRun.current) {
+            isFirstRun.current = false
+            if (!searchTerm) return
+        }
+
+        const timer = setTimeout(() => {
+            refresh(searchTerm)
+        }, 500)
+        return () => clearTimeout(timer)
+    }, [searchTerm, refresh])
+
+    const filteredClients = currentClients
+
+    const handleEdit = (client: Cliente) => {
+        setEditingClient(client)
+        setIsFormOpen(true)
+    }
+
+    const handleNewClient = () => {
+        setEditingClient(null)
+        setIsFormOpen(true)
+    }
 
     const handleSaveCliente = (data: any) => {
-        addCliente(negocioActivoId, data)
+        if (editingClient) {
+            return updateCliente(negocioActivoId, editingClient.id, data)
+        }
+        return addCliente(negocioActivoId, data)
     }
 
     return (
@@ -48,7 +71,7 @@ export default function ClientsPage() {
                     <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Clientes</h1>
                     <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">Base de datos de clientes.</p>
                 </div>
-                <Button className="gap-2 w-full sm:w-auto" onClick={() => setIsFormOpen(true)}>
+                <Button className="gap-2 w-full sm:w-auto" onClick={handleNewClient}>
                     <Plus className="h-4 w-4" /> Nuevo Cliente
                 </Button>
             </div>
@@ -91,6 +114,9 @@ export default function ClientsPage() {
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex items-center justify-end gap-2">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={() => handleEdit(client)}>
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
                                         <Link href={`/clientes/${client.id}`}>
                                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary">
                                                 <ExternalLink className="h-4 w-4" />
@@ -102,7 +128,7 @@ export default function ClientsPage() {
                         )) : (
                             <TableRow>
                                 <TableCell colSpan={6} className="h-24 text-center text-zinc-500">
-                                    No hay clientes registrados o que coincidan con la búsqueda.
+                                    {loading ? 'Cargando clientes...' : 'No hay clientes registrados o que coincidan con la búsqueda.'}
                                 </TableCell>
                             </TableRow>
                         )}
@@ -124,11 +150,16 @@ export default function ClientsPage() {
                                     <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tight">{client.totalPedidos || 0} PEDIDOS</p>
                                 </div>
                             </div>
-                            <Link href={`/clientes/${client.id}`}>
-                                <Button variant="outline" size="icon" className="h-8 w-8">
-                                    <ExternalLink className="h-3.5 w-3.5" />
+                            <div className="flex items-center gap-2">
+                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleEdit(client)}>
+                                    <Pencil className="h-3.5 w-3.5" />
                                 </Button>
-                            </Link>
+                                <Link href={`/clientes/${client.id}`}>
+                                    <Button variant="outline" size="icon" className="h-8 w-8">
+                                        <ExternalLink className="h-3.5 w-3.5" />
+                                    </Button>
+                                </Link>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-900">
@@ -149,7 +180,7 @@ export default function ClientsPage() {
                 ))}
                 {filteredClients.length === 0 && (
                     <div className="py-12 text-center text-zinc-500 border border-dashed rounded-lg">
-                        No hay resultados.
+                        {loading ? 'Cargando...' : 'No hay resultados.'}
                     </div>
                 )}
             </div>
@@ -158,6 +189,7 @@ export default function ClientsPage() {
                 open={isFormOpen}
                 onOpenChange={setIsFormOpen}
                 onSave={handleSaveCliente}
+                initialData={editingClient}
             />
         </div>
     )

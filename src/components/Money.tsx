@@ -1,4 +1,5 @@
 import { formatCurrency } from '@/src/lib/utils'
+import { useNegocio } from '../context/NegocioContext'
 
 interface MoneyProps {
     amount: number
@@ -6,5 +7,6 @@ interface MoneyProps {
 }
 
 export function Money({ amount, className }: MoneyProps) {
-    return <span className={className}>{formatCurrency(amount)}</span>
+    const { negocioActivo } = useNegocio()
+    return <span className={className}>{formatCurrency(amount, negocioActivo?.moneda)}</span>
 }

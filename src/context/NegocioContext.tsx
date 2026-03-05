@@ -1,8 +1,9 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { Negocio, Rubro, NegocioConfig, getNegocioConfig, mapCategoryToRubro } from '@/src/domain/negocio'
 import { api } from '@/src/lib/api'
+import { toast } from 'react-hot-toast'
 
 interface NegocioContextType {
     negocios: Negocio[]
@@ -11,8 +12,8 @@ interface NegocioContextType {
     config: NegocioConfig
     setActivo: (id: string) => void
     loadNegocios: () => Promise<void>
-    addNegocio: (nombre: string, rubro: Rubro) => void
-    updateNegocio: (id: string, nombre: string, rubro: Rubro) => void
+    addNegocio: (nombre: string, rubro: Rubro) => Promise<any>
+    updateNegocio: (id: string, data: Partial<Negocio>) => Promise<void>
     removeNegocio: (id: string) => void
 }
 
@@ -30,6 +31,7 @@ export function NegocioProvider({ children }: { children: React.ReactNode }) {
                 id: b.id,
                 nombre: b.name,
                 rubro: mapCategoryToRubro(b.category),
+                moneda: b.currency || 'ARS',
                 createdAt: b.createdAt
             }))
             setNegocios(mapped)
@@ -40,8 +42,12 @@ export function NegocioProvider({ children }: { children: React.ReactNode }) {
         }
     }, [])
 
+    const initialized = useRef(false)
+
     useEffect(() => {
         const init = async () => {
+            if (initialized.current) return
+
             if (typeof window !== 'undefined') {
                 const path = window.location.pathname;
                 if (path === '/login' || path === '/register') {
@@ -50,6 +56,7 @@ export function NegocioProvider({ children }: { children: React.ReactNode }) {
                 }
             }
 
+            initialized.current = true
             const savedActivo = localStorage.getItem('prodmanager_negocio_activo')
             await loadNegocios()
             if (savedActivo) setNegocioActivoId(savedActivo)
@@ -66,14 +73,32 @@ export function NegocioProvider({ children }: { children: React.ReactNode }) {
 
     const setActivo = (id: string) => setNegocioActivoId(id)
 
-    const addNegocio = (nombre: string, rubro: Rubro) => {
-        // TODO: Implementar creación real en Backend
-        console.warn('addNegocio no implementado: requiere persistencia en Backend.')
-        throw new Error('La creación de negocios debe realizarse desde el panel de configuración (No implementado en cliente aún).')
+    const addNegocio = async (nombre: string, rubro: Rubro) => {
+        try {
+            const data = await api.businesses.create({ templateKey: rubro, name: nombre })
+            await loadNegocios()
+            toast.success('Negocio creado correctamente')
+            return data
+        } catch (error: any) {
+            console.error('Error creating business:', error)
+            toast.error('Error al crear el negocio: ' + error.message)
+            throw error
+        }
     }
 
-    const updateNegocio = (id: string, nombre: string, rubro: Rubro) => {
-        setNegocios(negocios.map(n => n.id === id ? { ...n, nombre, rubro } : n))
+    const updateNegocio = async (id: string, data: Partial<Negocio>) => {
+        try {
+            const updateData: any = {}
+            if (data.nombre) updateData.name = data.nombre
+            if (data.rubro) updateData.category = data.rubro
+            if (data.moneda) updateData.currency = data.moneda
+
+            await api.businesses.update(id, updateData)
+            await loadNegocios()
+            toast.success('Ajustes guardados correctamente')
+        } catch (error: any) {
+            toast.error('Error al actualizar: ' + error.message)
+        }
     }
 
     const removeNegocio = (id: string) => {

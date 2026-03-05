@@ -54,7 +54,12 @@ export async function fetchApi<T>(path: string, options: RequestInit = {}): Prom
 export const api = {
     orders: {
         getAll: (filters?: any) => {
-            const params = new URLSearchParams(filters).toString();
+            const cleanFilters = Object.fromEntries(
+                Object.entries(filters || {})
+                    .filter(([_, v]) => v != null)
+                    .map(([k, v]) => [k, String(v)])
+            );
+            const params = new URLSearchParams(cleanFilters).toString();
             return fetchApi(`/orders${params ? `?${params}` : ''}`);
         },
         getOne: (id: string) => fetchApi(`/orders/${id}`),
@@ -85,13 +90,31 @@ export const api = {
     businesses: {
         getAll: () => fetchApi('/businesses'),
         getTemplates: () => fetchApi<any[]>('/business-templates'),
-        create: (templateKey: string) => fetchApi<any>('/businesses', {
+        create: (data: { templateKey: string; name?: string }) => fetchApi<any>('/businesses', {
             method: 'POST',
-            body: JSON.stringify({ templateKey })
+            body: JSON.stringify(data)
+        }),
+        getDashboardSummary: (businessId: string) => fetchApi<any>(`/businesses/${businessId}/dashboard-summary`, {
+            cache: 'no-store'
+        }),
+        getOne: (id: string) => fetchApi<any>(`/businesses/${id}`),
+        update: (id: string, data: any) => fetchApi<any>(`/businesses/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(data)
         }),
     },
     customers: {
-        getAll: () => fetchApi('/customers'),
+        getAll: (filters?: any) => {
+            const cleanFilters = Object.fromEntries(
+                Object.entries(filters || {})
+                    .filter(([_, v]) => v != null)
+                    .map(([k, v]) => [k, String(v)])
+            );
+            const params = new URLSearchParams(cleanFilters).toString();
+            return fetchApi(`/customers${params ? `?${params}` : ''}`, {
+                cache: 'no-store'
+            });
+        },
         getOne: (id: string) => fetchApi(`/customers/${id}`),
         create: (data: any) => fetchApi('/customers', {
             method: 'POST',
@@ -101,12 +124,27 @@ export const api = {
             method: 'PATCH',
             body: JSON.stringify(data),
         }),
+        remove: (id: string) => fetchApi(`/customers/${id}`, {
+            method: 'DELETE',
+        }),
     },
     printers: {
-        getAll: () => fetchApi('/printers'),
+        getAll: (businessId?: string) => fetchApi(`/printers${businessId ? `?businessId=${businessId}` : ''}`),
+        getOne: (id: string) => fetchApi(`/printers/${id}`),
+        create: (data: any) => fetchApi('/printers', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
         updateStatus: (id: string, status: string) => fetchApi(`/printers/${id}/status`, {
             method: 'PATCH',
             body: JSON.stringify({ status }),
+        }),
+        assignOrder: (id: string, orderId: string) => fetchApi(`/printers/${id}/assign-order`, {
+            method: 'POST',
+            body: JSON.stringify({ orderId }),
+        }),
+        release: (id: string) => fetchApi(`/printers/${id}/release`, {
+            method: 'POST',
         }),
     }
 };

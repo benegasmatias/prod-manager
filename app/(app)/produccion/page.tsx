@@ -8,8 +8,8 @@ import { usePedidos } from '@/src/context/PedidosContext'
 export default function ProductionPage() {
     const { negocioActivoId, config } = useNegocio()
     const { pedidos } = usePedidos()
-    const orders = pedidos[negocioActivoId] || pedidos['n1'] || []
-    const inProduction = orders.filter(o => o.estado === 'En Producción' || o.estado === 'Parcial')
+    const orders = pedidos[negocioActivoId] || []
+    const inProduction = orders.filter(o => o.estado === 'En Producción')
 
     return (
         <div className="space-y-6">
@@ -30,27 +30,39 @@ export default function ProductionPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                {order.items.map(item => (
-                                    <div key={item.id} className="space-y-2">
-                                        <div className="flex justify-between text-sm">
-                                            <span>{item.nombreProducto}</span>
-                                            <span className="font-medium">{item.quantityProduced} / {item.cantidad} un.</span>
+                                {order.items?.map(item => {
+                                    const qty = item.cantidad || 1;
+                                    const produced = item.quantityProduced || 0;
+                                    const progress = Math.min(100, Math.round((produced / qty) * 100));
+
+                                    return (
+                                        <div key={item.id} className="space-y-2">
+                                            <div className="flex justify-between text-sm">
+                                                <span>{item.nombreProducto}</span>
+                                                <span className="font-medium text-xs text-zinc-500">
+                                                    {produced} / {qty} un. ({progress}%)
+                                                </span>
+                                            </div>
+                                            <div className="h-2 w-full rounded-full bg-zinc-100 dark:bg-zinc-800">
+                                                <div
+                                                    className="h-2 rounded-full bg-zinc-900 dark:bg-zinc-100 transition-all duration-500"
+                                                    style={{ width: `${progress}%` }}
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="h-2 w-full rounded-full bg-zinc-100 dark:bg-zinc-800">
-                                            <div
-                                                className="h-2 rounded-full bg-zinc-900 dark:bg-zinc-100"
-                                                style={{ width: `${(item.quantityProduced / item.cantidad) * 100}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
+                                {(!order.items || order.items.length === 0) && (
+                                    <p className="text-sm text-zinc-400 italic text-center py-2">Sin ítems registrados en este pedido.</p>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
                 ))}
                 {inProduction.length === 0 && (
-                    <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-zinc-200 dark:border-zinc-800 text-zinc-400">
-                        No hay pedidos en curso actualmente.
+                    <div className="flex h-40 flex-col items-center justify-center rounded-lg border border-dashed border-zinc-200 dark:border-zinc-800 text-zinc-400 gap-2">
+                        <p>No hay pedidos en curso actualmente.</p>
+                        <p className="text-xs">Solo se muestran pedidos con estado "En Producción".</p>
                     </div>
                 )}
             </div>

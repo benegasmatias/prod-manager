@@ -1,22 +1,74 @@
 'use client'
 
+import { useState, useEffect, useRef } from 'react'
 import { StatCard } from '@/src/components/StatCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card'
 import { ShoppingCart, TrendingUp, Users, AlertCircle } from 'lucide-react'
-import { BadgeUrgencia } from '@/src/components/BadgeUrgencia'
 import { Money } from '@/src/components/Money'
 import { Badge } from '@/src/components/ui/badge'
 import { useNegocio } from '@/src/context/NegocioContext'
-import { usePedidos } from '@/src/context/PedidosContext'
+import { api } from '@/src/lib/api'
+
+interface DashboardSummary {
+    totalSales: number;
+    profit: number | null;
+    activeOrders: number;
+    newCustomers: number;
+    recentOrders: any[];
+    alerts: any[];
+    trends: any | null;
+}
+
+// Sistema de deduplicación global para evitar llamadas concurrentes idénticas
+const PENDING_REQUESTS = new Map<string, Promise<any>>()
 
 export default function DashboardPage() {
     const { negocioActivoId } = useNegocio()
-    const { pedidos } = usePedidos()
-    const orders = pedidos[negocioActivoId] || pedidos['n1'] || []
+    const [summary, setSummary] = useState<DashboardSummary | null>(null)
+    const [loading, setLoading] = useState(true)
 
-    const activeOrders = orders.filter(o => o.estado !== 'Entregado')
-    const totalSales = orders.reduce((acc, o) => acc + o.totalPrice, 0)
-    const totalProfit = orders.reduce((acc, o) => acc + o.profit, 0)
+    useEffect(() => {
+        if (!negocioActivoId) return
+
+        const fetchSummary = async () => {
+            setLoading(true)
+
+            // Si ya hay una petición en vuelo para este negocio, reutilizamos la promesa
+            if (PENDING_REQUESTS.has(negocioActivoId)) {
+                try {
+                    const data = await PENDING_REQUESTS.get(negocioActivoId)
+                    setSummary(data)
+                    setLoading(false)
+                    return
+                } catch (err) {
+                    // Si la petición previa falló, seguimos para reintentar
+                }
+            }
+
+            const promise = api.businesses.getDashboardSummary(negocioActivoId)
+            PENDING_REQUESTS.set(negocioActivoId, promise)
+
+            try {
+                const data = await promise
+                setSummary(data)
+            } catch (error: any) {
+                console.error('Error fetching dashboard summary:', error)
+            } finally {
+                // Liberamos la petición del mapa para permitir refrescos futuros
+                PENDING_REQUESTS.delete(negocioActivoId)
+                setLoading(false)
+            }
+        }
+
+        fetchSummary()
+    }, [negocioActivoId])
+
+    const totalSales = summary?.totalSales || 0
+    const profit = summary?.profit
+    const activeOrdersCount = summary?.activeOrders || 0
+    const newCustomersCount = summary?.newCustomers || 0
+    const recentOrders = summary?.recentOrders || []
+    const alerts = summary?.alerts || []
 
     return (
         <div className="space-y-6 sm:space-y-8">
@@ -29,27 +81,24 @@ export default function DashboardPage() {
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 <StatCard
                     title="Ventas Totales"
-                    value={totalSales.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
+                    value={loading ? '...' : totalSales.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
                     icon={TrendingUp}
-                    trend={{ value: 12, label: 'vs mes pasado', isPositive: true }}
                 />
                 <StatCard
                     title="Ganancia"
-                    value={totalProfit.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
+                    value={loading ? '...' : (profit !== null && profit !== undefined ? profit.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }) : '—')}
                     icon={TrendingUp}
-                    trend={{ value: 8, label: 'vs mes pasado', isPositive: true }}
                 />
                 <StatCard
                     title="Pedidos Activos"
-                    value={activeOrders.length}
+                    value={loading ? '...' : activeOrdersCount}
                     icon={ShoppingCart}
                     description="Pedidos en curso"
                 />
                 <StatCard
                     title="Nuevos Clientes"
-                    value="+4"
+                    value={loading ? '...' : newCustomersCount}
                     icon={Users}
-                    trend={{ value: 2, label: 'vs mes pasado', isPositive: true }}
                 />
             </div>
 
@@ -61,22 +110,21 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {orders.length > 0 ? orders.map((order) => (
+                            {recentOrders.length > 0 ? recentOrders.map((order) => (
                                 <div key={order.id} className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-100 pb-4 last:border-0 last:pb-0 dark:border-zinc-800 gap-3">
                                     <div className="space-y-1">
                                         <p className="text-sm font-semibold leading-none">{order.clientName}</p>
-                                        <p className="text-xs text-zinc-500">{order.numero}</p>
+                                        <p className="text-xs text-zinc-500">{order.id.slice(0, 8).toUpperCase()}</p>
                                     </div>
                                     <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
                                         <div className="flex items-center gap-2">
-                                            <BadgeUrgencia urgencia={order.urgencia} />
-                                            <Badge variant="outline" className="hidden xs:inline-flex">{order.estado}</Badge>
+                                            <Badge variant="outline" className="hidden xs:inline-flex">{order.status}</Badge>
                                         </div>
-                                        <Money amount={order.totalPrice} className="text-sm font-bold" />
+                                        <Money amount={order.total} className="text-sm font-bold" />
                                     </div>
                                 </div>
                             )) : (
-                                <p className="text-sm text-zinc-500 py-6 text-center">No hay pedidos registrados.</p>
+                                <p className="text-sm text-zinc-500 py-6 text-center">{loading ? 'Cargando...' : 'No hay pedidos registrados.'}</p>
                             )}
                         </div>
                     </CardContent>
@@ -88,26 +136,27 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {orders.some(o => o.urgencia === 'VENCIDO') && (
-                                <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-900/10">
+                            {!loading && alerts.length > 0 ? alerts.map((alert, index) => (
+                                <div key={index} className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-900/10">
                                     <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
                                     <div>
-                                        <p className="text-sm font-bold text-red-900 dark:text-red-400">Atención: Pedidos Vencidos</p>
+                                        <p className="text-sm font-bold text-red-900 dark:text-red-400">Atención: Pedido Vencido</p>
                                         <p className="text-xs text-red-700 dark:text-red-500">
-                                            Tienes entregas pendientes que han superado el plazo.
+                                            {alert.message}
+                                        </p>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="flex gap-3 rounded-lg border border-zinc-100 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+                                    <AlertCircle className="h-5 w-5 text-zinc-600 shrink-0" />
+                                    <div>
+                                        <p className="text-sm font-medium">{loading ? 'Cargando...' : 'Todo al día'}</p>
+                                        <p className="text-xs text-zinc-500">
+                                            {loading ? 'Obteniendo alertas...' : 'No hay incidentes críticos reportados.'}
                                         </p>
                                     </div>
                                 </div>
                             )}
-                            <div className="flex gap-3 rounded-lg border border-zinc-100 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
-                                <AlertCircle className="h-5 w-5 text-zinc-600 shrink-0" />
-                                <div>
-                                    <p className="text-sm font-medium">Todo al día</p>
-                                    <p className="text-xs text-zinc-500">
-                                        No hay incidentes críticos reportados.
-                                    </p>
-                                </div>
-                            </div>
                         </div>
                     </CardContent>
                 </Card>

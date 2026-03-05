@@ -13,6 +13,8 @@ import Link from 'next/link'
 import { Input } from '@/src/components/ui/input'
 import { useNegocio } from '@/src/context/NegocioContext'
 import { usePedidos } from '@/src/context/PedidosContext'
+import { api } from '@/src/lib/api'
+import { toast } from 'react-hot-toast'
 
 export default function OrderDetailPage() {
     const { id } = useParams()
@@ -20,18 +22,83 @@ export default function OrderDetailPage() {
     const { pedidos } = usePedidos()
     const [order, setOrder] = useState<Pedido | null>(null)
     const [items, setItems] = useState<any[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+
+    // Necesitamos la función de mapeo que está en el contexto, o recrearla aquí
+    const mapOrder = (order: any): Pedido => {
+        const statusMap: Record<string, any> = {
+            'PENDING': 'Pendiente',
+            'IN_PROGRESS': 'En Producción',
+            'DONE': 'Terminado',
+            'DELIVERED': 'Entregado'
+        }
+        const now = new Date();
+        const dueDate = new Date(order.dueDate);
+        const isCompleted = order.status === 'DONE' || order.status === 'DELIVERED';
+        const isOverdue = dueDate < now && !isCompleted;
+
+        return {
+            id: order.id,
+            negocioId: order.businessId,
+            numero: order.code || order.id.slice(0, 8),
+            clienteId: order.customerId || '',
+            clientName: order.clientName || '',
+            fechaCreacion: order.createdAt,
+            fechaEntrega: order.dueDate,
+            estado: statusMap[order.status] || 'Pendiente',
+            observaciones: order.notes || '',
+            total: Number(order.totalPrice) || 0,
+            totalPrice: Number(order.totalPrice) || 0,
+            profit: order.profit || 0,
+            totalSenias: 0,
+            saldo: Number(order.totalPrice) || 0,
+            urgencia: isOverdue ? 'VENCIDO' : 'EN TIEMPO',
+            items: order.items?.map((item: any) => ({
+                id: item.id,
+                nombre: item.name,
+                nombreProducto: item.name,
+                descripcion: item.description,
+                cantidad: item.qty,
+                quantityProduced: item.doneQty || 0,
+                precioUnitario: Number(item.price) || 0,
+                senia: 0,
+                url_stl: item.stlUrl,
+                peso_gramos: item.weightGrams,
+                duracion_estimada_minutos: item.estimatedMinutes,
+                demora_estimada_minutos: item.estimatedMinutes
+            })) || []
+        }
+    }
 
     useEffect(() => {
-        const businessOrders = pedidos[negocioActivoId] || pedidos['n1'] || []
+        const businessOrders = pedidos[negocioActivoId] || []
         const foundOrder = businessOrders.find(o => o.id === id)
 
         if (foundOrder) {
             setOrder(foundOrder)
             setItems([...foundOrder.items])
+            setIsLoading(false)
+        } else if (id && typeof id === 'string') {
+            // Si no está en el contexto, intentamos cargarlo directamente de la API
+            const fetchOrder = async () => {
+                try {
+                    const data: any = await api.orders.getOne(id)
+                    const mapped = mapOrder(data)
+                    setOrder(mapped)
+                    setItems([...mapped.items])
+                } catch (error) {
+                    console.error('Error fetching order detail:', error)
+                    toast.error('No se pudo cargar el pedido')
+                } finally {
+                    setIsLoading(false)
+                }
+            }
+            fetchOrder()
         }
     }, [id, negocioActivoId, pedidos])
 
-    if (!order) return <div className="p-8 text-center text-zinc-500">Cargando pedido o pedido no encontrado...</div>
+    if (isLoading) return <div className="p-8 text-center text-zinc-500">Cargando detalles del pedido...</div>
+    if (!order) return <div className="p-8 text-center text-zinc-500">Pedido no encontrado.</div>
 
     const handleUpdateProduced = (itemId: string, val: number) => {
         setItems(prev => prev.map(item =>

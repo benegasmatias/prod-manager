@@ -4,14 +4,49 @@ import { BadgeUrgencia } from '@/src/components/BadgeUrgencia'
 import { Money } from '@/src/components/Money'
 import { DateTag } from '@/src/components/DateTag'
 import { Badge } from '@/src/components/ui/badge'
+import { usePedidos } from '../context/PedidosContext'
+import { useNegocio } from '../context/NegocioContext'
 
 interface OrdersKanbanProps {
     orders: Pedido[]
 }
 
-const COLUMNS: OrderStatus[] = ['Pendiente', 'En Producción', 'Parcial', 'Terminado', 'Entregado']
+const COLUMNS: OrderStatus[] = ['Pendiente', 'En Producción', 'Terminado', 'Entregado']
 
 export function OrdersKanban({ orders }: OrdersKanbanProps) {
+    const { updatePedido } = usePedidos()
+    const { negocioActivoId } = useNegocio()
+
+    const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+        await updatePedido(negocioActivoId, orderId, { estado: newStatus })
+    }
+
+    const onDragStart = (e: React.DragEvent, orderId: string) => {
+        e.dataTransfer.setData('orderId', orderId)
+        e.dataTransfer.effectAllowed = 'move'
+        // Pequeño delay para que no desaparezca el elemento que estamos arrastrando inmediatamente
+        const target = e.currentTarget as HTMLElement
+        target.style.opacity = '0.5'
+    }
+
+    const onDragEnd = (e: React.DragEvent) => {
+        const target = e.currentTarget as HTMLElement
+        target.style.opacity = '1'
+    }
+
+    const onDragOver = (e: React.DragEvent) => {
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'move'
+    }
+
+    const onDrop = async (e: React.DragEvent, newStatus: OrderStatus) => {
+        e.preventDefault()
+        const orderId = e.dataTransfer.getData('orderId')
+        if (orderId) {
+            await handleStatusChange(orderId, newStatus)
+        }
+    }
+
     return (
         <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-6 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x snap-mandatory lg:snap-none">
             {COLUMNS.map((status) => {
@@ -20,22 +55,41 @@ export function OrdersKanban({ orders }: OrdersKanbanProps) {
                     <div
                         key={status}
                         className="flex w-[85vw] sm:w-[350px] lg:w-full lg:min-w-[280px] lg:max-w-[320px] shrink-0 flex-col gap-4 snap-center"
+                        onDragOver={onDragOver}
+                        onDrop={(e) => onDrop(e, status)}
                     >
                         <div className="flex items-center justify-between px-2">
                             <h3 className="font-bold tracking-tight text-sm sm:text-base">{status}</h3>
                             <Badge variant="secondary" className="px-1.5 h-5 text-[10px]">{columnOrders.length}</Badge>
                         </div>
 
-                        <div className="flex h-full min-h-[500px] flex-col gap-3 rounded-lg bg-zinc-100/50 p-2 sm:p-3 dark:bg-zinc-900/50 border border-zinc-200/50 dark:border-zinc-800/50">
+                        <div className="flex h-full min-h-[500px] flex-col gap-3 rounded-lg bg-zinc-100/50 p-2 sm:p-3 dark:bg-zinc-900/50 border border-zinc-200/50 dark:border-zinc-800/50 transition-colors">
                             {columnOrders.map((order) => (
-                                <Card key={order.id} className="cursor-grab active:cursor-grabbing hover:border-zinc-300 dark:hover:border-zinc-600 transition-all shadow-sm">
-                                    <CardContent className="p-3 sm:p-4 space-y-3">
+                                <Card
+                                    key={order.id}
+                                    draggable
+                                    onDragStart={(e) => onDragStart(e, order.id)}
+                                    onDragEnd={onDragEnd}
+                                    className="cursor-grab active:cursor-grabbing hover:border-zinc-300 dark:hover:border-zinc-600 transition-all shadow-sm"
+                                >
+                                    <CardContent className="p-3 sm:p-4 space-y-3 pointer-events-none">
                                         <div className="flex items-start justify-between">
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">{order.numero}</span>
                                             <BadgeUrgencia urgencia={order.urgencia} />
                                         </div>
 
-                                        <p className="text-sm font-bold truncate">{order.clientName}</p>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="text-sm font-bold truncate flex-1">{order.clientName}</p>
+                                            <select
+                                                className="text-[9px] font-bold uppercase rounded-full px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 border-none outline-none focus:ring-1 focus:ring-zinc-400 cursor-pointer h-6 pointer-events-auto"
+                                                value={order.estado}
+                                                onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
+                                            >
+                                                {COLUMNS.map((col) => (
+                                                    <option key={col} value={col}>{col.toUpperCase()}</option>
+                                                ))}
+                                            </select>
+                                        </div>
 
                                         <div className="flex flex-col gap-1">
                                             {order.items.slice(0, 3).map(item => (

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { OrdersTable } from '@/src/components/OrdersTable'
 import { Button } from '@/src/components/ui/button'
 import { Plus, LayoutGrid, List } from 'lucide-react'
@@ -13,8 +14,17 @@ export default function OrdersPage() {
     const { pedidos } = usePedidos()
     const { clientes } = useClientes()
 
+    const [estadoFilter, setEstadoFilter] = useState('all')
+    const [urgenciaFilter, setUrgenciaFilter] = useState('all')
+
     const orders = pedidos[negocioActivoId] || []
     const misClientes = clientes[negocioActivoId] || []
+
+    const filteredOrders = orders.filter(order => {
+        const matchEstado = estadoFilter === 'all' || order.estado === estadoFilter
+        const matchUrgencia = urgenciaFilter === 'all' || order.urgencia === urgenciaFilter
+        return matchEstado && matchUrgencia
+    })
 
     const getClientName = (id: string) => {
         const c = misClientes.find(cli => cli.id === id)
@@ -47,24 +57,33 @@ export default function OrdersPage() {
 
             <div className="flex items-center gap-4 py-4">
                 <div className="flex h-9 w-[200px] rounded-md border border-zinc-200 bg-white px-3 py-1 dark:border-zinc-800 dark:bg-zinc-950">
-                    <select className="bg-transparent text-sm focus:outline-none w-full">
-                        <option>Todos los estados</option>
-                        <option>Pendiente</option>
-                        <option>En Producción</option>
-                        <option>Terminado</option>
+                    <select
+                        className="bg-transparent text-sm focus:outline-none w-full"
+                        value={estadoFilter}
+                        onChange={(e) => setEstadoFilter(e.target.value)}
+                    >
+                        <option value="all">Todos los estados</option>
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="En Producción">En Producción</option>
+                        <option value="Terminado">Terminado</option>
+                        <option value="Entregado">Entregado</option>
                     </select>
                 </div>
                 <div className="flex h-9 w-[200px] rounded-md border border-zinc-200 bg-white px-3 py-1 dark:border-zinc-800 dark:bg-zinc-950">
-                    <select className="bg-transparent text-sm focus:outline-none w-full">
-                        <option>Prioridad: Todas</option>
-                        <option>VENCIDO</option>
-                        <option>PRÓXIMO</option>
-                        <option>EN TIEMPO</option>
+                    <select
+                        className="bg-transparent text-sm focus:outline-none w-full"
+                        value={urgenciaFilter}
+                        onChange={(e) => setUrgenciaFilter(e.target.value)}
+                    >
+                        <option value="all">Prioridad: Todas</option>
+                        <option value="VENCIDO">VENCIDO</option>
+                        <option value="PRÓXIMO">PRÓXIMO</option>
+                        <option value="EN TIEMPO">EN TIEMPO</option>
                     </select>
                 </div>
             </div>
 
-            <OrdersTable orders={orders} getClientName={getClientName} />
+            <OrdersTable orders={filteredOrders} getClientName={getClientName} />
         </div>
     )
 }

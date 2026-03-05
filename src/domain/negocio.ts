@@ -4,6 +4,7 @@ export interface Negocio {
     id: string;
     nombre: string;
     rubro: Rubro;
+    moneda?: string;
     createdAt: string;
 }
 

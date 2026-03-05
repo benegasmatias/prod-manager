@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react'
 import { Button } from '@/src/components/ui/button'
@@ -18,7 +18,7 @@ export default function NuevoPedidoPage() {
     const router = useRouter()
     const { negocioActivoId, config } = useNegocio()
     const { addPedido, pedidos } = usePedidos()
-    const { clientes } = useClientes()
+    const { clientes, refresh: refreshClientes, loading: loadingClientes } = useClientes()
 
     const misClientes = clientes[negocioActivoId] || []
     const misPedidos = pedidos[negocioActivoId] || []
@@ -27,6 +27,8 @@ export default function NuevoPedidoPage() {
     const [fechaEntrega, setFechaEntrega] = useState('')
     const [observaciones, setObservaciones] = useState('')
     const [items, setItems] = useState<Partial<ItemPedido>[]>([{ cantidad: 1, precioUnitario: 0, senia: 0, nombreProducto: '' }])
+
+    const [isLoading, setIsLoading] = useState(false)
 
     const generarNumeroPedido = () => {
         const prefix = config.labels.produccion.includes('3D') ? '3D' : (config.labels.produccion.includes('Seguimiento') ? 'MET' : 'PED')
@@ -79,7 +81,7 @@ export default function NuevoPedidoPage() {
         return null
     }
 
-    const handleSave = (e: React.FormEvent) => {
+    const handleSave = async (e: React.FormEvent) => {
         e.preventDefault()
         const error = validate()
         if (error) {
@@ -87,33 +89,40 @@ export default function NuevoPedidoPage() {
             return
         }
 
-        const hoy = new Date()
-        const fechaE = new Date(fechaEntrega)
+        setIsLoading(true)
+        try {
+            const hoy = new Date()
+            const fechaE = new Date(fechaEntrega)
 
-        // calculo simple urgencia
-        const pDate = new Date(hoy)
-        pDate.setDate(pDate.getDate() + 2) // si faltan menos de 2 dias es PROXIMO
-        let urgencia: 'VENCIDO' | 'PRÓXIMO' | 'EN TIEMPO' = 'EN TIEMPO'
+            // calculo simple urgencia
+            const pDate = new Date(hoy)
+            pDate.setDate(pDate.getDate() + 2) // si faltan menos de 2 dias es PROXIMO
+            let urgencia: 'VENCIDO' | 'PRÓXIMO' | 'EN TIEMPO' = 'EN TIEMPO'
 
-        if (fechaE < hoy) urgencia = 'VENCIDO'
-        else if (fechaE <= pDate) urgencia = 'PRÓXIMO'
+            if (fechaE < hoy) urgencia = 'VENCIDO'
+            else if (fechaE <= pDate) urgencia = 'PRÓXIMO'
 
-        const nPedidoParams = {
-            clienteId,
-            numero: generarNumeroPedido(),
-            fechaCreacion: new Date().toISOString(),
-            fechaEntrega: new Date(fechaEntrega).toISOString(),
-            estado: 'Pendiente' as const,
-            observaciones,
-            items: items as ItemPedido[],
-            total: totales.total,
-            totalSenias: totales.senias,
-            saldo,
-            urgencia
+            const nPedidoParams = {
+                clienteId,
+                numero: generarNumeroPedido(),
+                fechaCreacion: new Date().toISOString(),
+                fechaEntrega: new Date(fechaEntrega).toISOString(),
+                estado: 'Pendiente' as const,
+                observaciones,
+                items: items as ItemPedido[],
+                total: totales.total,
+                totalSenias: totales.senias,
+                saldo,
+                urgencia
+            }
+
+            await addPedido(negocioActivoId, nPedidoParams)
+            router.push('/pedidos')
+        } catch (err) {
+            console.error('Error saving order:', err)
+        } finally {
+            setIsLoading(false)
         }
-
-        addPedido(negocioActivoId, nPedidoParams)
-        router.push('/pedidos')
     }
 
     return (
@@ -141,8 +150,9 @@ export default function NuevoPedidoPage() {
                                     className="flex h-10 w-full rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:ring-offset-zinc-950 dark:focus:ring-zinc-300"
                                     value={clienteId}
                                     onChange={e => setClienteId(e.target.value)}
+                                    disabled={loadingClientes || isLoading}
                                 >
-                                    <option value="">Seleccione un cliente...</option>
+                                    <option value="">{loadingClientes ? 'Cargando clientes...' : 'Seleccione un cliente...'}</option>
                                     {misClientes.map(c => (
                                         <option key={c.id} value={c.id}>{c.nombre}</option>
                                     ))}
@@ -150,11 +160,11 @@ export default function NuevoPedidoPage() {
                             </div>
                             <div>
                                 <Label htmlFor="fecha">Fecha de Entrega <span className="text-red-500">*</span></Label>
-                                <Input id="fecha" type="date" value={fechaEntrega} onChange={e => setFechaEntrega(e.target.value)} />
+                                <Input id="fecha" type="date" value={fechaEntrega} onChange={e => setFechaEntrega(e.target.value)} disabled={isLoading} />
                             </div>
                             <div className="sm:col-span-2">
                                 <Label htmlFor="obs">Observaciones Generales</Label>
-                                <Input id="obs" value={observaciones} onChange={e => setObservaciones(e.target.value)} placeholder="Acuerdos, prioridad, etc." />
+                                <Input id="obs" value={observaciones} onChange={e => setObservaciones(e.target.value)} placeholder="Acuerdos, prioridad, etc." disabled={isLoading} />
                             </div>
                         </div>
                     </div>
@@ -248,8 +258,14 @@ export default function NuevoPedidoPage() {
                             </div>
                         </div>
 
-                        <Button type="submit" className="w-full gap-2 mt-2 h-11 text-md font-semibold">
-                            <Save className="h-4 w-4" /> Guardar Pedido
+                        <Button type="submit" className="w-full gap-2 mt-2 h-11 text-md font-semibold" disabled={isLoading}>
+                            {isLoading ? (
+                                <span>Guardando...</span>
+                            ) : (
+                                <>
+                                    <Save className="h-4 w-4" /> Guardar Pedido
+                                </>
+                            )}
                         </Button>
                     </div>
                 </div>
