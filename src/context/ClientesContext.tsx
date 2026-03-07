@@ -5,6 +5,8 @@ import { toast } from 'react-hot-toast'
 import { api } from '@/src/lib/api'
 import { useNegocio } from '@/src/context/NegocioContext'
 
+import { usePathname } from 'next/navigation'
+
 export interface Cliente {
     id: string
     negocioId: string
@@ -50,7 +52,7 @@ export function ClientesProvider({ children }: { children: React.ReactNode }) {
                 email: c.email || '',
                 notas: c.notes || '',
                 createdAt: c.createdAt,
-                totalPedidos: c.orders?.length || 0
+                totalPedidos: c.totalOrders || 0
             })) || []
 
             setClientes(prev => ({
@@ -65,18 +67,25 @@ export function ClientesProvider({ children }: { children: React.ReactNode }) {
     }, [negocioActivoId])
 
     const lastFetchedId = useRef<string | null>(null)
+
+    const pathname = usePathname()
+
     useEffect(() => {
-        // Solo refrescar si cambia el negocio y no es el mismo que ya pedimos
-        if (!negocioActivoId || lastFetchedId.current === negocioActivoId) return
+        // Solo refrescar si cambia el negocio o el path, y no es el mismo que ya pedimos (si el path es el mismo)
+        if (!negocioActivoId) return
 
-        if (typeof window !== 'undefined') {
-            const path = window.location.pathname;
-            if (path === '/login' || path === '/register') return;
+        if (pathname === '/login' || pathname === '/register') return
+
+        // OPTIMIZACIÓN: Solo cargar clientes si estamos en una pantalla que los usa
+        const screensThatNeedClientes = ['/clientes', '/pedidos', '/produccion'];
+        const isRelevantPath = screensThatNeedClientes.some(p => pathname.startsWith(p));
+
+        if (isRelevantPath) {
+            // Si el negocio cambió, reseteamos el lastFetchedId
+            lastFetchedId.current = negocioActivoId
+            refresh()
         }
-
-        lastFetchedId.current = negocioActivoId
-        refresh()
-    }, [negocioActivoId, refresh])
+    }, [negocioActivoId, pathname, refresh])
 
     const addCliente = async (negocioId: string, data: Omit<Cliente, 'id' | 'negocioId' | 'createdAt' | 'totalPedidos'>) => {
         try {

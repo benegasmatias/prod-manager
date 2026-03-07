@@ -10,8 +10,10 @@ interface NegocioContextType {
     negocioActivoId: string
     negocioActivo: Negocio | undefined
     config: NegocioConfig
+    user: any | null
+    isInitialized: boolean
     setActivo: (id: string) => void
-    loadNegocios: () => Promise<void>
+    loadNegocios: () => Promise<Negocio[]>
     addNegocio: (nombre: string, rubro: Rubro) => Promise<any>
     updateNegocio: (id: string, data: Partial<Negocio>) => Promise<void>
     removeNegocio: (id: string) => void
@@ -22,6 +24,7 @@ const NegocioContext = createContext<NegocioContextType | undefined>(undefined)
 export function NegocioProvider({ children }: { children: React.ReactNode }) {
     const [negocios, setNegocios] = useState<Negocio[]>([])
     const [negocioActivoId, setNegocioActivoId] = useState<string>('')
+    const [user, setUser] = useState<any | null>(null)
     const [isInitialized, setIsInitialized] = useState(false)
 
     const loadNegocios = useCallback(async () => {
@@ -35,10 +38,11 @@ export function NegocioProvider({ children }: { children: React.ReactNode }) {
                 createdAt: b.createdAt
             }))
             setNegocios(mapped)
+            return mapped
         } catch (error) {
             console.error('Error loading businesses in context:', error)
-            // fetchApi ya maneja el 401 redirigiendo, aquí solo fallamos silenciosamente o limpiamos
             setNegocios([])
+            return []
         }
     }, [])
 
@@ -58,9 +62,30 @@ export function NegocioProvider({ children }: { children: React.ReactNode }) {
 
             initialized.current = true
             const savedActivo = localStorage.getItem('prodmanager_negocio_activo')
-            await loadNegocios()
-            if (savedActivo) setNegocioActivoId(savedActivo)
-            setIsInitialized(true)
+
+            try {
+                const [loadedNegocios, profile]: [Negocio[], any] = await Promise.all([
+                    loadNegocios(),
+                    api.users.getMe()
+                ])
+
+                setUser(profile)
+
+                if (savedActivo && loadedNegocios.find(n => n.id === savedActivo)) {
+                    setNegocioActivoId(savedActivo)
+                } else if (loadedNegocios.length > 0) {
+                    const defaultId = profile.defaultBusinessId
+                    if (defaultId && loadedNegocios.find(n => n.id === defaultId)) {
+                        setNegocioActivoId(defaultId)
+                    } else {
+                        setNegocioActivoId(loadedNegocios[0].id)
+                    }
+                }
+            } catch (e) {
+                console.error('[NegocioContext] Error initialization:', e)
+            } finally {
+                setIsInitialized(true)
+            }
         }
         init()
     }, [loadNegocios])
@@ -71,9 +96,14 @@ export function NegocioProvider({ children }: { children: React.ReactNode }) {
         }
     }, [negocioActivoId, isInitialized])
 
-    const setActivo = (id: string) => setNegocioActivoId(id)
+    const setActivo = useCallback((id: string) => {
+        setNegocioActivoId(id)
+        api.users.setDefaultBusiness(null, id).catch(err => {
+            console.error('[NegocioContext] Error persistiendo negocio por defecto:', err)
+        })
+    }, [])
 
-    const addNegocio = async (nombre: string, rubro: Rubro) => {
+    const addNegocio = useCallback(async (nombre: string, rubro: Rubro) => {
         try {
             const data = await api.businesses.create({ templateKey: rubro, name: nombre })
             await loadNegocios()
@@ -84,9 +114,9 @@ export function NegocioProvider({ children }: { children: React.ReactNode }) {
             toast.error('Error al crear el negocio: ' + error.message)
             throw error
         }
-    }
+    }, [loadNegocios])
 
-    const updateNegocio = async (id: string, data: Partial<Negocio>) => {
+    const updateNegocio = useCallback(async (id: string, data: Partial<Negocio>) => {
         try {
             const updateData: any = {}
             if (data.nombre) updateData.name = data.nombre
@@ -99,16 +129,18 @@ export function NegocioProvider({ children }: { children: React.ReactNode }) {
         } catch (error: any) {
             toast.error('Error al actualizar: ' + error.message)
         }
-    }
+    }, [loadNegocios])
 
-    const removeNegocio = (id: string) => {
-        if (negocios.length <= 1) return
-        const rest = negocios.filter(n => n.id !== id)
-        setNegocios(rest)
-        if (negocioActivoId === id) {
-            setNegocioActivoId(rest[0].id)
-        }
-    }
+    const removeNegocio = useCallback((id: string) => {
+        setNegocios(prev => {
+            if (prev.length <= 1) return prev
+            const rest = prev.filter(n => n.id !== id)
+            if (negocioActivoId === id) {
+                setNegocioActivoId(rest[0].id)
+            }
+            return rest
+        })
+    }, [negocioActivoId])
 
     const negocioActivo = negocios.find(n => n.id === negocioActivoId)
     const config = getNegocioConfig(negocioActivo?.rubro || 'GENERICO')
@@ -119,7 +151,9 @@ export function NegocioProvider({ children }: { children: React.ReactNode }) {
             negocioActivoId,
             negocioActivo,
             config,
+            user,
             setActivo,
+            isInitialized,
             loadNegocios,
             addNegocio,
             updateNegocio,

@@ -1,8 +1,8 @@
-export type OrderStatus = 'Pendiente' | 'En Producción' | 'Parcial' | 'Terminado' | 'Entregado';
+export type OrderStatus = string;
 
 export type MachineStatus = 'Libre' | 'Ocupada' | 'Mantenimiento';
 
-export type Priority = 'VENCIDO' | 'PRÓXIMO' | 'EN TIEMPO';
+export type Priority = 'VENCIDO' | 'PRÓXIMO' | 'EN TIEMPO' | 'LISTO';
 
 export interface Client {
     id: string;
@@ -29,6 +29,37 @@ export type ItemPedido = {
     medidas?: string
     material?: string
     terminacion?: string
+    // Metalúrgica extendido
+    tipo_trabajo?: string
+    material_estructura?: string
+    tipo_chapa?: string
+    color?: string
+    motor?: boolean
+    instalacion?: boolean
+    guias?: boolean
+    cerradura?: boolean
+    refuerzos?: boolean
+    revestimiento?: string
+    metadata?: any
+}
+
+export type Employee = {
+    id: string;
+    firstName: string;
+    lastName?: string;
+    active: boolean;
+    phone?: string;
+    email?: string;
+    specialties?: string;
+}
+
+export type ProductionJob = {
+    id: string;
+    title: string;
+    status: string;
+    responsable?: Employee;
+    notes?: string;
+    sortRank: number;
 }
 
 export type Pedido = {
@@ -36,18 +67,21 @@ export type Pedido = {
     negocioId: string
     numero: string
     clienteId: string
-    clientName: string // Added for dashboard
+    clientName: string
+    clientPhone?: string
     fechaCreacion: string
     fechaEntrega: string
     estado: OrderStatus
     observaciones?: string
     items: ItemPedido[]
     total: number
-    totalPrice: number // Added for compatibility
-    profit: number // Added for dashboard
+    totalPrice: number
+    profit: number
     totalSenias: number
     saldo: number
     urgencia: Priority
+    responsableGeneral?: Employee
+    jobs?: ProductionJob[]
 }
 
 export interface OrderItem {

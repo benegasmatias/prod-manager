@@ -6,75 +6,71 @@ import { useNegocio } from '@/src/context/NegocioContext'
 import { api } from '@/src/lib/api'
 
 export function BusinessGuard({ children }: { children: React.ReactNode }) {
-    const { negocios, negocioActivoId, setActivo, loadNegocios } = useNegocio()
+    const { negocios, negocioActivoId, setActivo, isInitialized } = useNegocio()
     const router = useRouter()
     const pathname = usePathname()
     const [isChecking, setIsChecking] = useState(true)
 
-    const lastVerifiedId = useRef<string | null>(null)
+    // Referencia para evitar verificaciones redundantes si nada crítico cambió
+    const verificationRef = useRef<string>('')
 
     useEffect(() => {
-        // Rutas públicas exceptuadas del guard
+        // 1. Excluir rutas públicas
         if (pathname === '/login' || pathname === '/register') {
             setIsChecking(false)
             return
         }
 
-        async function verifyAccess() {
-            // Evitar re-verificación si ya tenemos el negocio activo y no estamos en selección
-            if (negocioActivoId && lastVerifiedId.current === negocioActivoId && pathname !== '/select-business') {
+        // 2. Esperar a que el contexto de negocio esté listo (haya cargado de LS o Backend)
+        if (!isInitialized) return
+
+        const verify = async () => {
+            const currentCheck = `${pathname}-${negocioActivoId}-${negocios.length}`
+            if (verificationRef.current === currentCheck) {
                 setIsChecking(false)
                 return
             }
 
             try {
-                // Obtenemos perfil y lista para validación fresca
-                const [profile, bizList] = await Promise.all([
-                    api.users.getMe(),
-                    api.businesses.getAll()
-                ]) as [any, any[]]
+                // Si el negocio activo es válido dentro de la lista actual, todo okay
+                const isValid = negocioActivoId && negocios.some(b => b.id === negocioActivoId)
 
-                const defaultId = profile.defaultBusinessId
-                const hasValidBusiness = defaultId && bizList.some(b => b.id === defaultId)
-
-                // BLOQUEO A: Si ya tiene negocio predeterminado, no puede volver a seleccionar/onboarding
-                if (pathname === '/select-business' && hasValidBusiness) {
-                    console.info('[BusinessGuard] Ya tiene negocio activo -> Redirigiendo a Dashboard');
-                    if (negocioActivoId !== defaultId) setActivo(defaultId as string)
+                // BLOQUEO A: Si ya tiene negocio válido, no puede estar en /select-business
+                if (isValid && pathname === '/select-business') {
                     router.replace('/dashboard')
                     return
                 }
 
-                // BLOQUEO B: Si NO tiene negocio predeterminado (o perdió acceso), forzar selección
-                if (pathname !== '/select-business' && !hasValidBusiness) {
-                    console.info('[BusinessGuard] Sin negocio configurado -> Redirigiendo a /select-business');
-                    router.replace('/select-business')
-                    return
+                // BLOQUEO B: Si NO tiene ningún negocio válido y NO está en /select-business, forzar selección
+                if (!isValid && pathname !== '/select-business') {
+                    // Solo redirigimos si realmente no hay nada. Si hay negocios pero no activo,
+                    // NegocioContext ya debería haber intentado poner uno.
+                    if (negocios.length > 0) {
+                        setActivo(negocios[0].id)
+                    } else {
+                        router.replace('/select-business')
+                        return
+                    }
                 }
 
-                // Seteamos activo si estamos entrando a una ruta protegida con acceso válido
-                if (hasValidBusiness) {
-                    lastVerifiedId.current = defaultId
-                    if (negocioActivoId !== defaultId) setActivo(defaultId as string)
-                }
-
+                verificationRef.current = currentCheck
                 setIsChecking(false)
-
-            } catch (error: any) {
-                console.error('[BusinessGuard] Error verificando acceso:', error)
-                // fetchApi ya disparó el 401 -> /login si fuera necesario.
-                // Detenemos el loading para no bloquear al usuario en caso de error de red.
+            } catch (err) {
+                console.error('[BusinessGuard] Error:', err)
                 setIsChecking(false)
             }
         }
 
-        verifyAccess()
-    }, [pathname, router, setActivo, negocioActivoId])
+        verify()
+    }, [pathname, isInitialized, negocioActivoId, negocios.length, setActivo, router])
 
-    if (isChecking && pathname !== '/select-business') {
+    if (!isInitialized || (isChecking && pathname !== '/select-business')) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
-                <p className="text-zinc-500 animate-pulse font-medium">Verificando espacio de trabajo...</p>
+                <div className="text-center space-y-4">
+                    <div className="h-8 w-8 border-4 border-zinc-900 border-t-transparent dark:border-white animate-spin rounded-full mx-auto" />
+                    <p className="text-zinc-500 font-medium">Sincronizando...</p>
+                </div>
             </div>
         )
     }

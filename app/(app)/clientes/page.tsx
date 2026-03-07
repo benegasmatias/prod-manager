@@ -65,60 +65,83 @@ export default function ClientsPage() {
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-8 pb-10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Clientes</h1>
-                    <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">Base de datos de clientes.</p>
+                    <h1 className="text-3xl font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-50">Clientes</h1>
+                    <p className="text-sm font-medium text-zinc-500 mt-1 italic">Gestión y base de datos de relaciones comerciales</p>
                 </div>
-                <Button className="gap-2 w-full sm:w-auto" onClick={handleNewClient}>
+                <Button
+                    className="h-11 px-6 rounded-2xl font-black uppercase tracking-widest text-[11px] gap-2 shadow-xl shadow-primary/20"
+                    onClick={handleNewClient}
+                >
                     <Plus className="h-4 w-4" /> Nuevo Cliente
                 </Button>
             </div>
 
-            <div className="flex max-w-full sm:max-w-sm items-center gap-2">
-                <div className="relative w-full">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
+            <div className="flex flex-col md:flex-row gap-4 items-center bg-white dark:bg-zinc-900/20 p-4 rounded-[1.5rem] border border-zinc-100 dark:border-zinc-800/50 shadow-sm">
+                <div className="relative flex-1 w-full group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 group-focus-within:text-primary transition-colors" />
                     <input
                         type="search"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Buscar cliente..."
-                        className="h-9 w-full rounded-md border border-zinc-200 bg-white pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-950"
+                        placeholder="Buscar por nombre, email o teléfono..."
+                        className="h-12 w-full rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50 pl-11 pr-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all focus:bg-white dark:focus:bg-zinc-950"
                     />
                 </div>
             </div>
 
             {/* Desktop Table */}
-            <div className="hidden md:block rounded-md border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 overflow-hidden">
+            <div className="hidden md:block overflow-hidden bg-white dark:bg-zinc-900/20 rounded-[2rem] border border-zinc-100 dark:border-zinc-800/50 shadow-sm">
                 <Table>
                     <TableHeader>
-                        <TableRow>
-                            <TableHead>Nombre</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Teléfono</TableHead>
-                            <TableHead>Pedidos</TableHead>
-                            <TableHead className="text-right">Acciones</TableHead>
+                        <TableRow className="hover:bg-transparent border-b border-zinc-100 dark:border-zinc-800/50">
+                            <TableHead className="h-14 px-6 text-[10px] font-black uppercase tracking-widest text-zinc-400">Nombre del Cliente</TableHead>
+                            <TableHead className="h-14 px-6 text-[10px] font-black uppercase tracking-widest text-zinc-400">Contacto</TableHead>
+                            <TableHead className="h-14 px-6 text-[10px] font-black uppercase tracking-widest text-zinc-400">Teléfono</TableHead>
+                            <TableHead className="h-14 px-6 text-[10px] font-black uppercase tracking-widest text-zinc-400">Fidelidad</TableHead>
+                            <TableHead className="h-14 px-6 text-[10px] font-black uppercase tracking-widest text-zinc-400 text-right">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {filteredClients.length > 0 ? filteredClients.map((client) => (
-                            <TableRow key={client.id}>
-                                <TableCell className="font-medium">{client.nombre}</TableCell>
-                                <TableCell className="text-zinc-500">{client.email || '-'}</TableCell>
-                                <TableCell className="text-zinc-500">{client.telefono || '-'}</TableCell>
-                                <TableCell>
-                                    <span className="bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full text-xs font-bold text-zinc-600 dark:text-zinc-400">
-                                        {client.totalPedidos || 0}
-                                    </span>
+                            <TableRow key={client.id} className="group transition-colors hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30 border-b border-zinc-50 dark:border-zinc-800/30">
+                                <TableCell className="px-6 py-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-10 w-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center font-black text-zinc-500 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                                            {client.nombre.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{client.nombre}</span>
+                                            <span className="text-[10px] text-zinc-400 font-medium uppercase tracking-tighter">Cliente Registrado</span>
+                                        </div>
+                                    </div>
                                 </TableCell>
-                                <TableCell className="text-right">
-                                    <div className="flex items-center justify-end gap-2">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={() => handleEdit(client)}>
+                                <TableCell className="px-6 py-4">
+                                    <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 font-medium lowercase">
+                                        <Mail className="h-3 w-3 opacity-50" />
+                                        {client.email || 'Sin correo'}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="px-6 py-4">
+                                    <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+                                        <Phone className="h-3 w-3 opacity-50" />
+                                        {client.telefono || 'Sin teléfono'}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="px-6 py-4">
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800/50 text-[10px] font-black text-zinc-600 dark:text-zinc-400 border border-zinc-200/50 dark:border-zinc-700/50">
+                                        <DollarSign className="h-3 w-3" /> {client.totalPedidos || 0} PEDIDOS
+                                    </div>
+                                </TableCell>
+                                <TableCell className="px-6 py-4 text-right">
+                                    <div className="flex items-center justify-end gap-1">
+                                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-white dark:hover:bg-zinc-800 hover:text-primary shadow-sm transition-all border border-transparent hover:border-zinc-100 dark:hover:border-zinc-700" onClick={() => handleEdit(client)}>
                                             <Pencil className="h-4 w-4" />
                                         </Button>
                                         <Link href={`/clientes/${client.id}`}>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary">
+                                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-white dark:hover:bg-zinc-800 hover:text-primary shadow-sm transition-all border border-transparent hover:border-zinc-100 dark:hover:border-zinc-700">
                                                 <ExternalLink className="h-4 w-4" />
                                             </Button>
                                         </Link>
@@ -127,8 +150,13 @@ export default function ClientsPage() {
                             </TableRow>
                         )) : (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-24 text-center text-zinc-500">
-                                    {loading ? 'Cargando clientes...' : 'No hay clientes registrados o que coincidan con la búsqueda.'}
+                                <TableCell colSpan={5} className="h-40 text-center">
+                                    <div className="flex flex-col items-center justify-center gap-2 text-zinc-400">
+                                        <User className="h-8 w-8 opacity-20" />
+                                        <p className="text-sm font-medium italic">
+                                            {loading ? 'Cargando clientes...' : 'No hay resultados para esta búsqueda'}
+                                        </p>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         )}
@@ -137,50 +165,62 @@ export default function ClientsPage() {
             </div>
 
             {/* Mobile Grid */}
-            <div className="grid grid-cols-1 gap-4 md:hidden">
+            <div className="grid grid-cols-1 gap-6 md:hidden">
                 {filteredClients.map((client) => (
-                    <div key={client.id} className="p-4 rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 shadow-sm space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-                                    <User className="h-5 w-5 text-zinc-500" />
+                    <div key={client.id} className="group relative p-6 rounded-[2rem] border border-zinc-100 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/40 shadow-sm transition-all hover:shadow-md animate-slide-up">
+                        <div className="flex items-start justify-between mb-6">
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center font-black text-zinc-500 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                                    {client.nombre.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
-                                    <p className="font-bold text-zinc-900 dark:text-zinc-100 line-clamp-1">{client.nombre}</p>
-                                    <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tight">{client.totalPedidos || 0} PEDIDOS</p>
+                                    <p className="font-black text-zinc-900 dark:text-zinc-100 leading-tight">{client.nombre}</p>
+                                    <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tight mt-1">{client.totalPedidos || 0} PEDIDOS REGISTRADOS</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleEdit(client)}>
-                                    <Pencil className="h-3.5 w-3.5" />
+                                <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-zinc-100 dark:border-zinc-800" onClick={() => handleEdit(client)}>
+                                    <Pencil className="h-4 w-4" />
                                 </Button>
-                                <Link href={`/clientes/${client.id}`}>
-                                    <Button variant="outline" size="icon" className="h-8 w-8">
-                                        <ExternalLink className="h-3.5 w-3.5" />
-                                    </Button>
-                                </Link>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-900">
+                        <div className="space-y-3 pb-6 border-b border-zinc-50 dark:border-zinc-800/50">
                             {client.email && (
-                                <div className="flex items-center gap-2 text-xs text-zinc-500">
-                                    <Mail className="h-3 w-3" />
+                                <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                                    <div className="h-7 w-7 rounded-lg bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center">
+                                        <Mail className="h-3.5 w-3.5 opacity-50" />
+                                    </div>
                                     {client.email}
                                 </div>
                             )}
                             {client.telefono && (
-                                <div className="flex items-center gap-2 text-xs text-zinc-500">
-                                    <Phone className="h-3 w-3" />
+                                <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                                    <div className="h-7 w-7 rounded-lg bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center">
+                                        <Phone className="h-3.5 w-3.5 opacity-50" />
+                                    </div>
                                     {client.telefono}
                                 </div>
                             )}
                         </div>
+
+                        <div className="pt-5 flex items-center justify-between">
+                            <Link href={`/clientes/${client.id}`} className="flex-1 mr-2">
+                                <Button className="w-full h-10 rounded-xl font-bold text-xs uppercase tracking-wider bg-zinc-900 dark:bg-zinc-50 dark:text-zinc-900">
+                                    Ver Expediente <ExternalLink className="ml-2 h-3.5 w-3.5" />
+                                </Button>
+                            </Link>
+                        </div>
                     </div>
                 ))}
-                {filteredClients.length === 0 && (
-                    <div className="py-12 text-center text-zinc-500 border border-dashed rounded-lg">
-                        {loading ? 'Cargando...' : 'No hay resultados.'}
+
+                {filteredClients.length === 0 && !loading && (
+                    <div className="py-20 text-center flex flex-col items-center justify-center gap-4 border-2 border-dashed rounded-[2rem] border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/30 dark:bg-zinc-900/10">
+                        <User className="h-12 w-12 text-zinc-200 dark:text-zinc-800" />
+                        <div className="space-y-1">
+                            <p className="font-bold text-zinc-400">Sin coincidencias</p>
+                            <p className="text-xs text-zinc-500 italic px-6">No encontramos clientes con los criterios de búsqueda actuales.</p>
+                        </div>
                     </div>
                 )}
             </div>

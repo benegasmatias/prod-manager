@@ -48,7 +48,8 @@ export async function fetchApi<T>(path: string, options: RequestInit = {}): Prom
         throw new Error(errorData.message || `API Error: ${response.status} ${response.statusText}`);
     }
 
-    return response.json();
+    const responseText = await response.text();
+    return responseText ? JSON.parse(responseText) : {} as T;
 }
 
 export const api = {
@@ -67,9 +68,24 @@ export const api = {
             method: 'POST',
             body: JSON.stringify(data),
         }),
-        updateStatus: (id: string, status: string, notes?: string) => fetchApi(`/orders/${id}/status`, {
+        updateStatus: (id: string, status: string, notes?: string, responsableGeneralId?: string) => fetchApi(`/orders/${id}/status`, {
             method: 'PATCH',
-            body: JSON.stringify({ status, notes }),
+            body: JSON.stringify({ status, notes, responsableGeneralId }),
+        }),
+    },
+    jobs: {
+        getQueue: (businessId?: string) => fetchApi(`/jobs/queue${businessId ? `?businessId=${businessId}` : ''}`),
+        addProgress: (id: string, unitsDone: number, note?: string) => fetchApi(`/jobs/${id}/progress`, {
+            method: 'POST',
+            body: JSON.stringify({ unitsDone, note }),
+        }),
+        updateStatus: (id: string, status: string, note?: string) => fetchApi(`/jobs/${id}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status, note }),
+        }),
+        create: (data: any) => fetchApi('/jobs', {
+            method: 'POST',
+            body: JSON.stringify(data),
         }),
     },
     users: {
@@ -130,21 +146,67 @@ export const api = {
     },
     printers: {
         getAll: (businessId?: string) => fetchApi(`/printers${businessId ? `?businessId=${businessId}` : ''}`),
-        getOne: (id: string) => fetchApi(`/printers/${id}`),
+        getOne: (id: string, businessId?: string) => fetchApi(`/printers/${id}${businessId ? `?businessId=${businessId}` : ''}`),
         create: (data: any) => fetchApi('/printers', {
             method: 'POST',
             body: JSON.stringify(data),
         }),
-        updateStatus: (id: string, status: string) => fetchApi(`/printers/${id}/status`, {
+        update: (id: string, data: any, businessId?: string) => fetchApi(`/printers/${id}${businessId ? `?businessId=${businessId}` : ''}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        }),
+        updateStatus: (id: string, status: string, businessId?: string) => fetchApi(`/printers/${id}/status${businessId ? `?businessId=${businessId}` : ''}`, {
             method: 'PATCH',
             body: JSON.stringify({ status }),
         }),
-        assignOrder: (id: string, orderId: string) => fetchApi(`/printers/${id}/assign-order`, {
+        assignOrder: (id: string, orderId: string, materialId?: string, businessId?: string) => fetchApi(`/printers/${id}/assign-order${businessId ? `?businessId=${businessId}` : ''}`, {
             method: 'POST',
-            body: JSON.stringify({ orderId }),
+            body: JSON.stringify({ orderId, materialId }),
         }),
-        release: (id: string) => fetchApi(`/printers/${id}/release`, {
+        release: (id: string, businessId?: string) => fetchApi(`/printers/${id}/release${businessId ? `?businessId=${businessId}` : ''}`, {
             method: 'POST',
+        }),
+        remove: (id: string, businessId?: string) => fetchApi(`/printers/${id}${businessId ? `?businessId=${businessId}` : ''}`, {
+            method: 'DELETE',
+        }),
+    },
+    materials: {
+        getAll: (businessId?: string) => fetchApi(`/materials${businessId ? `?businessId=${businessId}` : ''}`),
+        getOne: (id: string) => fetchApi(`/materials/${id}`),
+        create: (data: any) => fetchApi('/materials', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+        update: (id: string, data: any) => fetchApi(`/materials/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(data),
+        }),
+        remove: (id: string) => fetchApi(`/materials/${id}`, {
+            method: 'DELETE',
+        }),
+    },
+    reports: {
+        getSummary: (businessId: string) => fetchApi(`/reports/summary?businessId=${businessId}`),
+    },
+    employees: {
+        getAll: (businessId: string, active?: boolean) => {
+            let path = `/employees?businessId=${businessId}`;
+            if (active !== undefined) {
+                path += `&active=${active}`;
+            }
+            return fetchApi(path);
+        },
+        getOne: (id: string, businessId: string) => fetchApi(`/employees/${id}?businessId=${businessId}`),
+        create: (businessId: string, data: any) => fetchApi(`/employees?businessId=${businessId}`, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+        update: (id: string, businessId: string, data: any) => fetchApi(`/employees/${id}?businessId=${businessId}`, {
+            method: 'PATCH',
+            body: JSON.stringify(data),
+        }),
+        remove: (id: string, businessId: string) => fetchApi(`/employees/${id}?businessId=${businessId}`, {
+            method: 'DELETE',
         }),
     }
 };

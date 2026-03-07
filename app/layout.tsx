@@ -6,6 +6,7 @@ import { NegocioProvider } from '@/src/context/NegocioContext'
 import { ThemeProvider } from '@/src/context/ThemeContext'
 import { ClientesProvider } from '@/src/context/ClientesContext'
 import { PedidosProvider } from '@/src/context/PedidosContext'
+import { SidebarProvider } from '@/src/context/SidebarContext'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,14 +34,16 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ThemeProvider>
-          <NegocioProvider>
-            <ClientesProvider>
-              <PedidosProvider>
-                {children}
-                <Toaster position="top-right" />
-              </PedidosProvider>
-            </ClientesProvider>
-          </NegocioProvider>
+          <SidebarProvider>
+            <NegocioProvider>
+              <ClientesProvider>
+                <PedidosProvider>
+                  {children}
+                  <Toaster position="top-right" />
+                </PedidosProvider>
+              </ClientesProvider>
+            </NegocioProvider>
+          </SidebarProvider>
         </ThemeProvider>
       </body>
     </html>
