@@ -1,8 +1,10 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { useNegocio } from '@/src/context/NegocioContext'
 import {
     Dialog,
+
     DialogContent,
     DialogHeader,
     DialogTitle,
@@ -29,7 +31,9 @@ export function StaffFormDialog({ open, onOpenChange, onSave, initialData }: Sta
         phone: '',
         specialties: ''
     })
+    const { config } = useNegocio()
     const [isLoading, setIsLoading] = useState(false)
+
 
     useEffect(() => {
         if (initialData) {
@@ -122,8 +126,9 @@ export function StaffFormDialog({ open, onOpenChange, onSave, initialData }: Sta
                                     value={formData.specialties}
                                     onChange={(e) => setFormData(prev => ({ ...prev, specialties: e.target.value }))}
                                     className="h-11 pl-10 rounded-xl bg-zinc-50/50 border-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 font-bold focus:bg-white dark:focus:bg-zinc-900 transition-all"
-                                    placeholder="Ej: Soldador, Pintor, Armado..."
+                                    placeholder={config.staffPlaceholder}
                                 />
+
                             </div>
                         </div>
 

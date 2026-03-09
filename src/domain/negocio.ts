@@ -5,8 +5,11 @@ export interface Negocio {
     nombre: string;
     rubro: Rubro;
     moneda?: string;
+    status: 'ACTIVE' | 'SUSPENDED' | 'TRIAL';
+    subscriptionExpiresAt?: string;
     createdAt: string;
 }
+
 
 export interface CampoItem {
     key: string;
@@ -48,7 +51,9 @@ export interface NegocioConfig {
         defaultUnit: string;
         defaultType: string;
     };
+    staffPlaceholder: string;
 }
+
 
 export function getNegocioConfig(rubro: Rubro): NegocioConfig {
     const commonStats: StatMetric[] = [
@@ -109,7 +114,9 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
                     { key: 'peso_gramos', label: 'Peso estimado (g)', tipo: 'number', section: 'ESPECIFICACIONES TÉCNICAS', placeholder: 'Ej. 150' },
                     { key: 'duracion_estimada_minutos', label: 'Duración (min)', tipo: 'number', section: 'ESPECIFICACIONES TÉCNICAS', placeholder: 'Ej. 120' },
                 ],
+                staffPlaceholder: 'Ej: Operario de Impresión, Modelador, Post-procesado...',
             };
+
         case 'METALURGICA':
             return {
                 sidebarItems: ['/dashboard', '/pedidos', '/clientes', '/personal', '/materiales', '/maquinas', '/reportes', '/ajustes'],
@@ -177,7 +184,9 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
                     { key: 'cerradura', label: 'Cerradura de Seguridad', tipo: 'boolean', section: 'OPCIONALES' },
                     { key: 'refuerzos', label: 'Refuerzos Estructurales', tipo: 'boolean', section: 'OPCIONALES' },
                 ],
+                staffPlaceholder: 'Ej: Soldador, Pintor, Armado, Plegador...',
             };
+
         case 'CARPINTERIA':
             return {
                 sidebarItems: ['/dashboard', '/pedidos', '/clientes', '/personal', '/produccion', '/reportes', '/ajustes'],
@@ -231,7 +240,9 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
                     { key: 'medidas', label: 'Dimensiones Finales', tipo: 'text', section: 'INFORMACIÓN DEL TRABAJO', placeholder: 'Ej. 120 x 80 x 45 cm' },
                     { key: 'herrajes', label: 'Detalle de Herrajes', tipo: 'textarea', section: 'ESPECIFICACIONES TÉCNICAS' },
                 ],
+                staffPlaceholder: 'Ej: Carpintero, Lijador, Lustrador, Diseñador...',
             };
+
         case 'GENERICO':
         default:
             return {
@@ -280,7 +291,9 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
                     { key: 'nombreProducto', label: 'Producto/Servicio', tipo: 'text', section: 'INFORMACIÓN DEL TRABAJO', required: true, placeholder: 'Ej. Servicio de pintura' },
                     { key: 'descripcion', label: 'Descripción Extendida', tipo: 'textarea', section: 'INFORMACIÓN DEL TRABAJO' },
                 ],
+                staffPlaceholder: 'Ej: Operario, Vendedor, Administrativo...',
             };
+
     }
 }
 export function mapCategoryToRubro(category?: string): Rubro {

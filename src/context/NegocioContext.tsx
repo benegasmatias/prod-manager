@@ -35,8 +35,11 @@ export function NegocioProvider({ children }: { children: React.ReactNode }) {
                 nombre: b.name,
                 rubro: mapCategoryToRubro(b.category),
                 moneda: b.currency || 'ARS',
+                status: b.status,
+                subscriptionExpiresAt: b.subscriptionExpiresAt,
                 createdAt: b.createdAt
             }))
+
             setNegocios(mapped)
             return mapped
         } catch (error) {

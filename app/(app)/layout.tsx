@@ -4,7 +4,9 @@ import { Sidebar } from '@/src/components/Sidebar'
 import { Topbar } from '@/src/components/Topbar'
 import { BusinessGuard } from '@/src/components/BusinessGuard'
 import { useSidebar } from '@/src/context/SidebarContext'
+import { SubscriptionBanner } from '@/src/components/SubscriptionBanner'
 import { cn } from '@/src/lib/utils'
+
 
 export default function AppLayout({
     children,
@@ -15,7 +17,9 @@ export default function AppLayout({
 
     return (
         <BusinessGuard>
+            <SubscriptionBanner />
             <div className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-all duration-300">
+
                 {/* Sidebar Desktop - Oculto en mobile */}
                 <div className="hidden lg:block">
                     <Sidebar />
