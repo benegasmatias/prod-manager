@@ -72,6 +72,10 @@ export const api = {
             method: 'PATCH',
             body: JSON.stringify({ status, notes, responsableGeneralId }),
         }),
+        reportFailure: (id: string, reason: string, wastedGrams: number, moveToReprint: boolean, materialId?: string) => fetchApi(`/orders/${id}/fail`, {
+            method: 'POST',
+            body: JSON.stringify({ reason, wastedGrams, moveToReprint, materialId }),
+        }),
     },
     jobs: {
         getQueue: (businessId?: string) => fetchApi(`/jobs/queue${businessId ? `?businessId=${businessId}` : ''}`),
@@ -159,9 +163,9 @@ export const api = {
             method: 'PATCH',
             body: JSON.stringify({ status }),
         }),
-        assignOrder: (id: string, orderId: string, materialId?: string, businessId?: string) => fetchApi(`/printers/${id}/assign-order${businessId ? `?businessId=${businessId}` : ''}`, {
+        assignOrder: (id: string, orderId: string, materialId?: string, businessId?: string, metadata?: any) => fetchApi(`/printers/${id}/assign-order${businessId ? `?businessId=${businessId}` : ''}`, {
             method: 'POST',
-            body: JSON.stringify({ orderId, materialId }),
+            body: JSON.stringify({ orderId, materialId, metadata }),
         }),
         release: (id: string, businessId?: string) => fetchApi(`/printers/${id}/release${businessId ? `?businessId=${businessId}` : ''}`, {
             method: 'POST',
@@ -171,7 +175,7 @@ export const api = {
         }),
     },
     materials: {
-        getAll: (businessId?: string) => fetchApi(`/materials${businessId ? `?businessId=${businessId}` : ''}`),
+        getAll: (businessId?: string) => fetchApi<any[]>(`/materials${businessId ? `?businessId=${businessId}` : ''}`),
         getOne: (id: string) => fetchApi(`/materials/${id}`),
         create: (data: any) => fetchApi('/materials', {
             method: 'POST',
@@ -208,5 +212,26 @@ export const api = {
         remove: (id: string, businessId: string) => fetchApi(`/employees/${id}?businessId=${businessId}`, {
             method: 'DELETE',
         }),
+    },
+    notifications: {
+        getAll: (businessId?: string) => fetchApi(`/notifications${businessId ? `?businessId=${businessId}` : ''}`),
+        getUnreadCount: (businessId?: string) => fetchApi<{ count: number }>(`/notifications/unread-count${businessId ? `?businessId=${businessId}` : ''}`),
+        markAsRead: (id: string) => fetchApi(`/notifications/${id}/read`, {
+            method: 'PATCH'
+        }),
+        markAllAsRead: (businessId?: string) => fetchApi('/notifications/read-all', {
+            method: 'PATCH',
+            body: JSON.stringify({ businessId })
+        }),
+        remove: (id: string) => fetchApi(`/notifications/${id}`, {
+            method: 'DELETE'
+        }),
+        removeAll: (businessId?: string) => fetchApi('/notifications/all', {
+            method: 'DELETE',
+            body: JSON.stringify({ businessId })
+        }),
     }
 };
+
+
+

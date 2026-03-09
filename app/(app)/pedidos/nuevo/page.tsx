@@ -28,7 +28,7 @@ export default function NuevoPedidoPage() {
     const [fechaEntrega, setFechaEntrega] = useState('')
     const [observaciones, setObservaciones] = useState('')
     const [responsableGeneralId, setResponsableGeneralId] = useState('')
-    const [items, setItems] = useState<Partial<ItemPedido>[]>([{ cantidad: 1, precioUnitario: 0, senia: 0, nombreProducto: '' }])
+    const [items, setItems] = useState<Partial<ItemPedido>[]>([{ cantidad: 1, precioUnitario: 0, senia: 0, nombreProducto: '', seDiseñaSTL: false } as any])
 
     const [employees, setEmployees] = useState<any[]>([])
     const [isLoading, setIsLoading] = useState(false)
@@ -51,13 +51,13 @@ export default function NuevoPedidoPage() {
     }, [negocioActivoId, profile])
 
     const generarNumeroPedido = () => {
-        const prefix = config.labels.produccion.includes('3D') ? '3D' : (config.labels.produccion.includes('Seguimiento') ? 'MET' : 'PED')
+        const prefix = config.labels.produccion.includes('Impresión') ? '3D' : (config.labels.produccion.includes('Seguimiento') || config.labels.produccion.includes('Taller') ? 'MET' : 'PED')
         const num = misPedidos.length + 1
         return `${prefix}-${num.toString().padStart(3, '0')}`
     }
 
     const addItem = () => {
-        setItems([...items, { cantidad: 1, precioUnitario: 0, senia: 0, nombreProducto: '' }])
+        setItems([...items, { cantidad: 1, precioUnitario: 0, senia: 0, nombreProducto: '', seDiseñaSTL: false } as any])
     }
 
     const removeItem = (index: number) => {
@@ -73,12 +73,16 @@ export default function NuevoPedidoPage() {
     }
 
     const totales = items.reduce((acc, item) => {
-        const tItem = (item.cantidad || 0) * (item.precioUnitario || 0)
+        const itemTotal = (item.cantidad || 0) * (item.precioUnitario || 0)
+        const itemDiseno = (item as any).seDiseñaSTL ? (Number((item as any).precioDiseno) || 0) * (item.cantidad || 1) : 0
+        const tItem = itemTotal + itemDiseno
         return {
             total: acc.total + tItem,
-            senias: acc.senias + (item.senia || 0)
+            senias: acc.senias + (item.senia || 0),
+            subtotalImpresion: acc.subtotalImpresion + itemTotal,
+            totalDiseno: acc.totalDiseno + itemDiseno,
         }
-    }, { total: 0, senias: 0 })
+    }, { total: 0, senias: 0, subtotalImpresion: 0, totalDiseno: 0 })
 
     const saldo = totales.total - totales.senias
 
@@ -93,9 +97,26 @@ export default function NuevoPedidoPage() {
             if ((el.cantidad || 0) < 1) return `La cantidad del ítem ${i + 1} debe ser mayor a 0`
             if ((el.precioUnitario || 0) < 0) return `El precio del ítem ${i + 1} no puede ser negativo`
 
-            const itemTotal = (el.cantidad || 0) * (el.precioUnitario || 0)
+            const itemDiseno = (el as any).seDiseñaSTL ? (Number((el as any).precioDiseno) || 0) * (el.cantidad || 1) : 0
+            const itemTotal = ((el.cantidad || 0) * (el.precioUnitario || 0)) + itemDiseno
+
+            // Validación específica de 3D
+            if (config.labels.produccion.includes('Impresión')) {
+                if ((el as any).seDiseñaSTL) {
+                    if ((el as any).precioDiseno === undefined || (el as any).precioDiseno === '') {
+                        return `El costo de diseño del ítem ${i + 1} debe ser especificado (puede ser 0)`
+                    }
+                    if (Number((el as any).precioDiseno) < 0) {
+                        return `El costo de diseño del ítem ${i + 1} no puede ser negativo`
+                    }
+                } else {
+                    // Si no se diseña, se valida la URL si es estrictamente requerida
+                    // Actualmente es opcional
+                }
+            }
+
             if ((el.senia || 0) < 0 || (el.senia || 0) > itemTotal) {
-                return `La seña del ítem ${i + 1} debe estar entre 0 y el total del ítem (${itemTotal})`
+                return `La seña del ítem ${i + 1} debe estar entre 0 y el total del ítem (${formatARS(itemTotal)})`
             }
         }
         return null
@@ -248,66 +269,86 @@ export default function NuevoPedidoPage() {
                                                         {sectionName}
                                                     </h4>
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                                        {sectionFields.map(f => (
-                                                            <div key={f.key} className={cn(
-                                                                "space-y-2",
-                                                                f.key === 'nombreProducto' || f.tipo === 'textarea' ? "sm:col-span-2" : ""
-                                                            )}>
-                                                                <Label className="text-[11px] font-black uppercase tracking-wider text-zinc-500">{f.label} {f.required && <span className="text-rose-500">*</span>}</Label>
+                                                        {sectionFields.map(f => {
+                                                            // Lógica condicional para Impresión 3D
+                                                            const is3D = config.labels.produccion.includes('Impresión');
+                                                            if (is3D) {
+                                                                if (f.key === 'url_stl' && (item as any).seDiseñaSTL) return null;
+                                                                if (f.key === 'precioDiseno' && !(item as any).seDiseñaSTL) return null;
+                                                            }
 
-                                                                {f.tipo === 'select' ? (
-                                                                    <select
-                                                                        className="flex h-11 w-full rounded-xl border border-zinc-200 bg-white dark:bg-zinc-900 px-4 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-zinc-900/5 dark:border-zinc-800 transition-all cursor-pointer"
-                                                                        value={(item as any)[f.key] || ''}
-                                                                        onChange={e => updateItem(idx, { [f.key]: e.target.value })}
-                                                                    >
-                                                                        <option value="" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">Seleccionar...</option>
-                                                                        {f.options?.map(opt => (
-                                                                            <option key={opt} value={opt} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">{opt}</option>
-                                                                        ))}
-                                                                    </select>
-                                                                ) : f.tipo === 'boolean' ? (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => updateItem(idx, { [f.key]: !(item as any)[f.key] })}
-                                                                        className={cn(
-                                                                            "flex items-center gap-3 h-11 w-full rounded-xl border px-4 transition-all duration-200",
-                                                                            (item as any)[f.key]
-                                                                                ? "bg-zinc-900 border-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-lg shadow-zinc-900/10"
-                                                                                : "bg-white border-zinc-200 text-zinc-400 dark:bg-zinc-950/20 dark:border-zinc-800"
-                                                                        )}
-                                                                    >
-                                                                        <div className={cn(
-                                                                            "h-5 w-9 rounded-full p-1 transition-colors flex items-center",
-                                                                            (item as any)[f.key] ? "bg-white/20 dark:bg-black/10" : "bg-zinc-100 dark:bg-zinc-800"
-                                                                        )}>
+                                                            return (
+                                                                <div key={f.key} className={cn(
+                                                                    "space-y-2",
+                                                                    f.key === 'nombreProducto' || f.tipo === 'textarea' ? "sm:col-span-2" : ""
+                                                                )}>
+                                                                    <Label className="text-[11px] font-black uppercase tracking-wider text-zinc-500">{f.label} {f.required && <span className="text-rose-500">*</span>}</Label>
+
+                                                                    {f.tipo === 'select' ? (
+                                                                        <select
+                                                                            className="flex h-11 w-full rounded-xl border border-zinc-200 bg-white dark:bg-zinc-900 px-4 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-zinc-900/5 dark:border-zinc-800 transition-all cursor-pointer"
+                                                                            value={(item as any)[f.key] ?? ''}
+                                                                            onChange={e => updateItem(idx, { [f.key]: e.target.value })}
+                                                                        >
+                                                                            <option value="" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">Seleccionar...</option>
+                                                                            {f.options?.map(opt => (
+                                                                                <option key={opt} value={opt} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">{opt}</option>
+                                                                            ))}
+                                                                        </select>
+                                                                    ) : f.tipo === 'boolean' ? (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                const newValue = !(item as any)[f.key];
+                                                                                const changes: any = { [f.key]: newValue };
+                                                                                if (is3D && f.key === 'seDiseñaSTL') {
+                                                                                    if (newValue) {
+                                                                                        changes.url_stl = ''; // limpiar URL al diseñar
+                                                                                    } else {
+                                                                                        changes.precioDiseno = undefined; // limpiar costo al no diseñar
+                                                                                    }
+                                                                                }
+                                                                                updateItem(idx, changes);
+                                                                            }}
+                                                                            className={cn(
+                                                                                "flex items-center gap-3 h-11 w-full rounded-xl border px-4 transition-all duration-200",
+                                                                                (item as any)[f.key]
+                                                                                    ? "bg-zinc-900 border-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-lg shadow-zinc-900/10"
+                                                                                    : "bg-white border-zinc-200 text-zinc-400 dark:bg-zinc-950/20 dark:border-zinc-800"
+                                                                            )}
+                                                                        >
                                                                             <div className={cn(
-                                                                                "h-3 w-3 rounded-full transition-transform duration-200",
-                                                                                (item as any)[f.key] ? "translate-x-4 bg-white dark:bg-zinc-900" : "translate-x-0 bg-zinc-300 dark:bg-zinc-600"
-                                                                            )} />
-                                                                        </div>
-                                                                        <span className="text-[10px] font-black uppercase tracking-[0.15em]">
-                                                                            {(item as any)[f.key] ? 'Incluido' : 'N/A'}
-                                                                        </span>
-                                                                    </button>
-                                                                ) : f.tipo === 'textarea' ? (
-                                                                    <textarea
-                                                                        className="flex min-h-[100px] w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-zinc-900/5 dark:border-zinc-800 dark:bg-zinc-950/50 focus:bg-white dark:focus:bg-zinc-900 transition-all"
-                                                                        value={(item as any)[f.key] || ''}
-                                                                        onChange={e => updateItem(idx, { [f.key]: e.target.value })}
-                                                                        placeholder={f.placeholder}
-                                                                    />
-                                                                ) : (
-                                                                    <Input
-                                                                        type={f.tipo === 'number' ? 'number' : 'text'}
-                                                                        value={(item as any)[f.key] || ''}
-                                                                        onChange={e => updateItem(idx, { [f.key]: f.tipo === 'number' ? Number(e.target.value) : e.target.value })}
-                                                                        placeholder={f.placeholder}
-                                                                        className="h-11 rounded-xl bg-zinc-50/50 focus:bg-white dark:focus:bg-zinc-900 dark:bg-zinc-950/50 transition-all font-bold"
-                                                                    />
-                                                                )}
-                                                            </div>
-                                                        ))}
+                                                                                "h-5 w-9 rounded-full p-1 transition-colors flex items-center",
+                                                                                (item as any)[f.key] ? "bg-white/20 dark:bg-black/10" : "bg-zinc-100 dark:bg-zinc-800"
+                                                                            )}>
+                                                                                <div className={cn(
+                                                                                    "h-3 w-3 rounded-full transition-transform duration-200",
+                                                                                    (item as any)[f.key] ? "translate-x-4 bg-white dark:bg-zinc-900" : "translate-x-0 bg-zinc-300 dark:bg-zinc-600"
+                                                                                )} />
+                                                                            </div>
+                                                                            <span className="text-[10px] font-black uppercase tracking-[0.15em]">
+                                                                                {(item as any)[f.key] ? 'SÍ' : 'NO'}
+                                                                            </span>
+                                                                        </button>
+                                                                    ) : f.tipo === 'textarea' ? (
+                                                                        <textarea
+                                                                            className="flex min-h-[100px] w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-zinc-900/5 dark:border-zinc-800 dark:bg-zinc-950/50 focus:bg-white dark:focus:bg-zinc-900 transition-all"
+                                                                            value={(item as any)[f.key] ?? ''}
+                                                                            onChange={e => updateItem(idx, { [f.key]: e.target.value })}
+                                                                            placeholder={f.placeholder}
+                                                                        />
+                                                                    ) : (
+                                                                        <Input
+                                                                            type={f.tipo === 'number' ? 'number' : (f.tipo === 'url' ? 'url' : 'text')}
+                                                                            value={(item as any)[f.key] ?? ''}
+                                                                            onChange={e => updateItem(idx, { [f.key]: f.tipo === 'number' ? (e.target.value === '' ? undefined : Number(e.target.value)) : e.target.value })}
+                                                                            placeholder={f.placeholder}
+                                                                            className="h-11 rounded-xl bg-zinc-50/50 focus:bg-white dark:focus:bg-zinc-900 dark:bg-zinc-950/50 transition-all font-bold"
+                                                                        />
+                                                                    )}
+                                                                </div>
+                                                            )
+                                                        })}
 
                                                         {/* Caso especial: Cantidad siempre va en la primera sección */}
                                                         {sectionName === 'INFORMACIÓN DEL TRABAJO' && (
@@ -361,7 +402,7 @@ export default function NuevoPedidoPage() {
                                                 <div className="space-y-2">
                                                     <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Total Neto del Ítem</Label>
                                                     <div className="h-12 w-full rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 flex items-center justify-center font-black text-xl shadow-lg shadow-zinc-900/10 transition-all group-hover:scale-[1.02]">
-                                                        {formatARS((item.cantidad || 0) * (item.precioUnitario || 0))}
+                                                        {formatARS(((item.cantidad || 0) * (item.precioUnitario || 0)) + ((item as any).seDiseñaSTL ? (Number((item as any).precioDiseno) || 0) * (item.cantidad || 1) : 0))}
                                                     </div>
                                                 </div>
                                             </div>
@@ -382,12 +423,22 @@ export default function NuevoPedidoPage() {
 
                         <div className="space-y-2 text-sm mb-4">
                             <div className="flex justify-between text-zinc-500">
-                                <span>Total Ítems:</span>
-                                <span>{items.length}</span>
+                                <span>Total Unidades:</span>
+                                <span>{items.reduce((acc, el) => acc + (Number(el.cantidad) || 0), 0)}</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-zinc-500">Subtotal Pedido:</span>
-                                <span className="font-semibold">{formatARS(totales.total)}</span>
+                            <div className="flex justify-between text-zinc-500">
+                                <span>Subtotal Producción:</span>
+                                <span>{formatARS(totales.subtotalImpresion)}</span>
+                            </div>
+                            {totales.totalDiseno > 0 && (
+                                <div className="flex justify-between text-indigo-500 font-medium">
+                                    <span>Costo de Diseños:</span>
+                                    <span>+ {formatARS(totales.totalDiseno)}</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between font-semibold pt-2 border-t mt-2">
+                                <span>Total Pedido:</span>
+                                <span>{formatARS(totales.total)}</span>
                             </div>
                             <div className="flex justify-between text-green-600 dark:text-green-400">
                                 <span>Total Señas:</span>

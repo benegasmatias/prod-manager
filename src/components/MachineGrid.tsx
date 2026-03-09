@@ -18,8 +18,9 @@ export function MachineGrid({ machines, onAssign, onRelease, onDetail, isSubmitt
     return (
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {machines.map((machine) => {
-                const isOcupada = machine.status === 'Ocupada'
-                const isMantenimiento = machine.status === 'Mantenimiento'
+                const isOcupada = machine.status === 'Ocupada' || machine.status === 'PRINTING'
+                const isMantenimiento = machine.status === 'Mantenimiento' || machine.status === 'MAINTENANCE'
+                const isLibre = machine.status === 'Libre' || machine.status === 'IDLE'
 
                 return (
                     <div key={machine.id} className={cn(
@@ -36,7 +37,7 @@ export function MachineGrid({ machines, onAssign, onRelease, onDetail, isSubmitt
                                                 "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
                                     )} />
                                     <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                                        {machine.status}
+                                        {isOcupada ? 'Ocupada' : isMantenimiento ? 'Mantenimiento' : 'Libre'}
                                     </span>
                                 </div>
                                 <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">{machine.name}</h3>
@@ -83,7 +84,7 @@ export function MachineGrid({ machines, onAssign, onRelease, onDetail, isSubmitt
                             </div>
 
                             <div className="flex gap-2 pt-4">
-                                {machine.status === 'Libre' ? (
+                                {isLibre ? (
                                     <button
                                         disabled={isSubmitting}
                                         onClick={() => onAssign(machine.id)}

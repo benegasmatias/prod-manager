@@ -59,7 +59,7 @@ const STATUS_MAP: Record<string, { label: string, color: string }> = {
     'IN_PROGRESS': { label: 'En Producción', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
     'DONE': { label: 'Terminado', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
     'READY': { label: 'Listo', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-    'DELIVERED': { label: 'Entregado', color: 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-black' },
+    'DELIVERED': { label: 'Entregado', color: 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800' },
     'CONFIRMED': { label: 'Confirmado', color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' },
     'CANCELLED': { label: 'Cancelado', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
 }
@@ -68,6 +68,17 @@ export default function DashboardPage() {
     const { negocioActivoId, negocioActivo, config } = useNegocio()
     const [summary, setSummary] = useState<DashboardSummary | null>(null)
     const [loading, setLoading] = useState(true)
+
+    const getStatusStyles = (status: string) => {
+        const stage = config.productionStages.find(s => s.key === status);
+        if (stage) {
+            // Using the color defined in config, mapping bg to text/border colors
+            const baseColor = stage.color.split('-')[1]; // e.g., 'blue', 'emerald'
+            if (baseColor === 'zinc') return 'bg-zinc-100 text-zinc-600 border-zinc-200';
+            return `bg-${baseColor}-50 text-${baseColor}-600 border-${baseColor}-200 dark:bg-${baseColor}-950/20 dark:text-${baseColor}-400 dark:border-${baseColor}-900/50`;
+        }
+        return 'bg-zinc-50 text-zinc-500 border-zinc-200';
+    }
 
     useEffect(() => {
         if (!negocioActivoId) return
@@ -164,20 +175,7 @@ export default function DashboardPage() {
                                     const coreStatus = STATUS_MAP[order.status];
 
                                     const label = stage?.label || coreStatus?.label || order.status;
-
-                                    // Improved color logic
-                                    let colorClass = "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400";
-
-                                    if (stage) {
-                                        const baseColor = stage.color.split('-')[1]; // e.g., 'blue', 'zinc'
-                                        if (baseColor === 'zinc') {
-                                            colorClass = "bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800";
-                                        } else {
-                                            colorClass = `bg-${baseColor}-500 text-white dark:bg-${baseColor}-500/20 dark:text-${baseColor}-400 dark:border-${baseColor}-500/30 border-transparent`;
-                                        }
-                                    } else if (coreStatus) {
-                                        colorClass = coreStatus.color;
-                                    }
+                                    const colorClass = getStatusStyles(order.status);
 
                                     return (
                                         <Link key={order.id} href={`/pedidos/${order.id}`} className="group block p-5 transition-all hover:bg-zinc-50 dark:hover:bg-zinc-900/50">

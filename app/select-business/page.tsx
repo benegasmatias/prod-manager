@@ -59,7 +59,7 @@ export default function SelectBusinessPage() {
         setActionLoading(templateKey)
         try {
             // Un solo llamado: Crea el negocio, vincula al usuario y lo setea como activo
-            const response = await api.businesses.create(templateKey)
+            const response = await api.businesses.create({ templateKey })
 
             // response ahora tiene { business: { id, name, category }, defaultBusinessId }
             setActivo(response.business.id)

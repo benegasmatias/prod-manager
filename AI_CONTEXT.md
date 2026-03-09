@@ -199,3 +199,48 @@ Para asegurar una experiencia consistente y legible en todo momento, especialmen
 3.  **Consistencia de Componentes**:
     *   Priorizar el uso de los componentes de la carpeta `@/src/components/ui` y asegurarse de que sus variantes `dark:` estén correctamente implementadas.
     *   Evitar estilos "ad-hoc" que rompan con la paleta de colores `zinc` definida para el modo oscuro.
+
+    ## UI LANGUAGE RULE
+
+All user-facing UI text MUST be in Spanish.
+
+This includes:
+
+- Status labels
+- Buttons
+- Table headers
+- Modals
+- Form labels
+- Tooltips
+- Notifications
+- Empty states
+- Errors
+
+The system must NOT display English words in the UI.
+
+Examples:
+
+Incorrect:
+- DELIVERED
+- READY
+- PENDING
+- CANCELLED
+
+Correct:
+- ENTREGADO
+- LISTO
+- PENDIENTE
+- CANCELADO
+
+If the backend uses enums in English, the frontend MUST map them to Spanish labels.
+
+Example mapping:
+
+PENDING -> Pendiente  
+IN_PROGRESS -> En producción  
+READY -> Listo  
+DELIVERED -> Entregado  
+CANCELLED -> Cancelado
+
+Important:
+The internal code (variables, enums, database) may remain in English, but the UI must always be Spanish.

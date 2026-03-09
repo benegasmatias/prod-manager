@@ -37,6 +37,7 @@ export default function MachinesPage() {
     const [formNombre, setFormNombre] = useState('')
     const [formModelo, setFormModelo] = useState('')
     const [formNozzle, setFormNozzle] = useState('0.4mm')
+    const [formMaxFilaments, setFormMaxFilaments] = useState(1)
 
     const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false)
     const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null)
@@ -66,6 +67,7 @@ export default function MachinesPage() {
                     name: p.name,
                     type: p.model || 'N/A',
                     status: status,
+                    maxFilaments: p.maxFilaments || 1,
                     queue: [],
                     currentJobId: undefined
                 }
@@ -152,6 +154,7 @@ export default function MachinesPage() {
         setFormNombre('')
         setFormModelo('')
         setFormNozzle('0.4mm')
+        setFormMaxFilaments(1)
         setIsDialogOpen(true)
     }
 
@@ -161,6 +164,7 @@ export default function MachinesPage() {
         setFormNombre(selectedMachineDetail.name)
         setFormModelo(selectedMachineDetail.model || '')
         setFormNozzle(selectedMachineDetail.nozzle || '0.4mm')
+        setFormMaxFilaments(selectedMachineDetail.maxFilaments || 1)
         setIsDialogOpen(true)
         setIsDetailSheetOpen(false)
     }
@@ -195,6 +199,7 @@ export default function MachinesPage() {
                     name: formNombre,
                     model: formModelo,
                     nozzle: formNozzle,
+                    maxFilaments: formMaxFilaments,
                 }, negocioActivoId)
                 toast.success('Unidad actualizada correctamente')
             } else {
@@ -203,6 +208,7 @@ export default function MachinesPage() {
                     name: formNombre,
                     model: formModelo,
                     nozzle: formNozzle,
+                    maxFilaments: formMaxFilaments,
                     active: true
                 })
                 toast.success('Unidad creada correctamente')
@@ -293,14 +299,28 @@ export default function MachinesPage() {
                             />
                         </div>
                         {negocioActivo?.rubro === 'IMPRESION_3D' && (
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Nozzle / Herramienta</label>
-                                <Input
-                                    value={formNozzle}
-                                    onChange={(e) => setFormNozzle(e.target.value)}
-                                    placeholder="Ej: 0.4mm"
-                                />
-                            </div>
+                            <>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Nozzle / Herramienta</label>
+                                    <Input
+                                        value={formNozzle}
+                                        onChange={(e) => setFormNozzle(e.target.value)}
+                                        placeholder="Ej: 0.4mm"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Capacidad de Filamentos (Simultáneos)</label>
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        max={16}
+                                        value={formMaxFilaments}
+                                        onChange={(e) => setFormMaxFilaments(Number(e.target.value))}
+                                        placeholder="Ej: 1 o 4 (AMS)"
+                                    />
+                                    <p className="text-[10px] text-zinc-500 italic">Define cuántos rollos puede cargar la máquina (ej: 4 si tiene AMS/Combo)</p>
+                                </div>
+                            </>
                         )}
                     </div>
                     <DialogFooter>
@@ -417,10 +437,16 @@ export default function MachinesPage() {
                                         <p className="text-sm font-bold">{selectedMachineDetail.model || 'N/A'}</p>
                                     </div>
                                     {negocioActivo?.rubro === 'IMPRESION_3D' && (
-                                        <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
-                                            <p className="text-[10px] text-zinc-500 font-bold uppercase">Nozzle</p>
-                                            <p className="text-sm font-bold">{selectedMachineDetail.nozzle || 'N/A'}</p>
-                                        </div>
+                                        <>
+                                            <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
+                                                <p className="text-[10px] text-zinc-500 font-bold uppercase">Nozzle</p>
+                                                <p className="text-sm font-bold">{selectedMachineDetail.nozzle || 'N/A'}</p>
+                                            </div>
+                                            <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
+                                                <p className="text-[10px] text-zinc-500 font-bold uppercase">Capacidad Colores</p>
+                                                <p className="text-sm font-bold">{selectedMachineDetail.maxFilaments || 1}</p>
+                                            </div>
+                                        </>
                                     )}
                                 </div>
                             </section>

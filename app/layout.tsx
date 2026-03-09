@@ -7,8 +7,10 @@ import { ThemeProvider } from '@/src/context/ThemeContext'
 import { ClientesProvider } from '@/src/context/ClientesContext'
 import { PedidosProvider } from '@/src/context/PedidosContext'
 import { SidebarProvider } from '@/src/context/SidebarContext'
+import { NotificationsProvider } from '@/src/context/NotificationsContext'
 
 const geistSans = Geist({
+
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
@@ -36,14 +38,17 @@ export default function RootLayout({
         <ThemeProvider>
           <SidebarProvider>
             <NegocioProvider>
-              <ClientesProvider>
-                <PedidosProvider>
-                  {children}
-                  <Toaster position="top-right" />
-                </PedidosProvider>
-              </ClientesProvider>
+              <NotificationsProvider>
+                <ClientesProvider>
+                  <PedidosProvider>
+                    {children}
+                    <Toaster position="top-right" />
+                  </PedidosProvider>
+                </ClientesProvider>
+              </NotificationsProvider>
             </NegocioProvider>
           </SidebarProvider>
+
         </ThemeProvider>
       </body>
     </html>

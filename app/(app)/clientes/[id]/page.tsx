@@ -64,7 +64,7 @@ export default function ClientDetailPage() {
                             <CardDescription>Lista de todos los pedidos realizados por este cliente.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <OrdersTable orders={clientOrders} getClientName={getClientName} />
+                            <OrdersTable orders={clientOrders} getClientName={getClientName} employees={[]} />
                         </CardContent>
                     </Card>
                 </div>

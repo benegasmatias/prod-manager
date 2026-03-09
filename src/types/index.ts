@@ -1,6 +1,6 @@
 export type OrderStatus = string;
 
-export type MachineStatus = 'Libre' | 'Ocupada' | 'Mantenimiento';
+export type MachineStatus = 'IDLE' | 'PRINTING' | 'MAINTENANCE' | 'Libre' | 'Ocupada' | 'Mantenimiento';
 
 export type Priority = 'VENCIDO' | 'PRÓXIMO' | 'EN TIEMPO' | 'LISTO';
 
@@ -58,6 +58,8 @@ export type ProductionJob = {
     title: string;
     status: string;
     responsable?: Employee;
+    materialId?: string;
+    material?: Material;
     notes?: string;
     sortRank: number;
 }
@@ -123,6 +125,18 @@ export interface Machine {
     name: string;
     type: string;
     status: MachineStatus;
+    maxFilaments?: number;
     currentJobId?: string;
     queue: string[]; // Order IDs
+}
+
+export interface Material {
+    id: string;
+    name: string;
+    type: string;
+    brand?: string;
+    color?: string;
+    remainingWeightGrams: number;
+    totalWeightGrams: number;
+    active: boolean;
 }

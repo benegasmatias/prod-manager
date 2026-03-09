@@ -51,8 +51,10 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from '@/src/components/ui/sheet'
 import { SidebarContent } from './Sidebar'
 import { useSidebar } from '@/src/context/SidebarContext'
+import { NotificationDropdown } from './notifications/NotificationDropdown'
 
 export function Topbar() {
+
     const { isCollapsed } = useSidebar()
     const {
         negocios,
@@ -240,12 +242,10 @@ export function Topbar() {
             <div className="flex items-center gap-2 sm:gap-3">
 
                 <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl relative hover:bg-zinc-100 dark:hover:bg-zinc-900 group">
-                        <Bell className="h-4 w-4 text-zinc-500 group-hover:scale-110 transition-transform" />
-                        <span className="absolute top-3 right-3 h-2 w-2 rounded-full bg-primary border-2 border-white dark:border-zinc-950" />
-                    </Button>
+                    <NotificationDropdown />
 
                     <Button
+
                         variant="ghost"
                         size="icon"
                         className="h-10 w-10 rounded-2xl hover:bg-zinc-100 dark:hover:bg-zinc-900"

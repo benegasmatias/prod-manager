@@ -316,6 +316,7 @@ export function OrdersTable({ orders, getClientName, sortKey, sortDir, onSort, e
                 isOpen={isStatusModalOpen}
                 onClose={() => setIsStatusModalOpen(false)}
                 employees={employees}
+                defaultFailureMode={false}
             />
         </div>
     )

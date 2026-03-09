@@ -85,10 +85,15 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
                     { key: 'activePrinters', label: 'Impresoras Activas', icon: 'Zap', format: 'number' },
                 ],
                 productionStages: [
+
                     { key: 'PENDING', label: 'Pendiente', color: 'bg-zinc-100' },
+                    { key: 'DESIGN', label: 'En Diseño', color: 'bg-indigo-500' },
                     { key: 'IN_PROGRESS', label: 'Imprimiendo', color: 'bg-blue-500' },
+                    { key: 'FAILED', label: 'Fallo de Impresión', color: 'bg-red-500' },
+                    { key: 'REPRINT_PENDING', label: 'Pendiente Reimpresión', color: 'bg-orange-400' },
                     { key: 'POST_PROCESS', label: 'Post-Proceso', color: 'bg-amber-500' },
                     { key: 'DONE', label: 'Terminado', color: 'bg-emerald-500' },
+                    { key: 'DELIVERED', label: 'Entregado', color: 'bg-zinc-100' },
                 ],
                 materialConfig: {
                     namePlaceholder: 'Ej: PLA Negro Pro / PETG Gris',
@@ -109,8 +114,10 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
                     ]
                 },
                 itemFields: [
-                    { key: 'nombreProducto', label: 'Nombre producto', tipo: 'text', section: 'INFORMACIÓN DEL TRABAJO', required: true, placeholder: 'Ej. Llavero de pared' },
-                    { key: 'url_stl', label: 'URL STL', tipo: 'url', section: 'ESPECIFICACIONES TÉCNICAS', placeholder: 'https://...' },
+                    { key: 'nombreProducto', label: 'Nombre del Modelo / Trabajo', tipo: 'text', section: 'INFORMACIÓN DEL TRABAJO', required: true, placeholder: 'Ej. Llavero de pared' },
+                    { key: 'seDiseñaSTL', label: '¿Se diseña el STL?', tipo: 'boolean', section: 'INFORMACIÓN DEL TRABAJO' },
+                    { key: 'precioDiseno', label: 'Costo de Diseño ($)', tipo: 'number', section: 'INFORMACIÓN DEL TRABAJO', placeholder: 'Ej. 2500' },
+                    { key: 'url_stl', label: 'URL STL', tipo: 'url', section: 'INFORMACIÓN DEL TRABAJO', placeholder: 'https://...' },
                     { key: 'peso_gramos', label: 'Peso estimado (g)', tipo: 'number', section: 'ESPECIFICACIONES TÉCNICAS', placeholder: 'Ej. 150' },
                     { key: 'duracion_estimada_minutos', label: 'Duración (min)', tipo: 'number', section: 'ESPECIFICACIONES TÉCNICAS', placeholder: 'Ej. 120' },
                 ],
@@ -146,6 +153,7 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
                     { key: 'ASSEMBLY', label: 'Armado', color: 'bg-amber-600' },
                     { key: 'PAINTING', label: 'Pintura', color: 'bg-purple-500' },
                     { key: 'DONE', label: 'Listo p/ Entrega', color: 'bg-emerald-500' },
+                    { key: 'DELIVERED', label: 'Entregado', color: 'bg-zinc-100' },
                 ],
                 materialConfig: {
                     namePlaceholder: 'Ej: Caño 40x40 / Chapa N18 / Electrodo 6013',
@@ -215,6 +223,7 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
                     { key: 'ARMADO', label: 'En Armado', color: 'bg-blue-500' },
                     { key: 'BARNIZADO', label: 'Lustre / Barniz', color: 'bg-amber-600' },
                     { key: 'DONE', label: 'Terminado', color: 'bg-emerald-500' },
+                    { key: 'DELIVERED', label: 'Entregado', color: 'bg-zinc-100' },
                 ],
                 materialConfig: {
                     namePlaceholder: 'Ej: Placa Melamina 18mm / Cola Vinílica',
@@ -270,6 +279,7 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
                     { key: 'PENDING', label: 'Pendiente', color: 'bg-zinc-100' },
                     { key: 'IN_PROGRESS', label: 'En Proceso', color: 'bg-blue-500' },
                     { key: 'DONE', label: 'Terminado', color: 'bg-emerald-500' },
+                    { key: 'DELIVERED', label: 'Entregado', color: 'bg-zinc-100' },
                 ],
                 materialConfig: {
                     namePlaceholder: 'Ej: Insumo General / Producto',

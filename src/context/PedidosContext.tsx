@@ -69,7 +69,15 @@ export function PedidosProvider({ children }: { children: React.ReactNode }) {
             saldo: total - totalSenias,
             urgencia: isCompleted ? 'LISTO' : (isOverdue ? 'VENCIDO' : 'EN TIEMPO'),
             items: items,
-            responsableGeneral: order.responsableGeneral
+            responsableGeneral: order.responsableGeneral,
+            jobs: order.jobs?.map((job: any) => ({
+                id: job.id,
+                title: job.title,
+                status: job.status,
+                materialId: job.materialId,
+                notes: job.notes,
+                sortRank: job.sortRank
+            }))
         }
     }
 

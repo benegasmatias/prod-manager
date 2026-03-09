@@ -20,10 +20,12 @@ export function OrdersKanban({ orders, employees }: OrdersKanbanProps) {
     const { negocioActivoId, config } = useNegocio()
     const [isStatusModalOpen, setIsStatusModalOpen] = useState(false)
     const [selectedOrder, setSelectedOrder] = useState<Pedido | null>(null)
+    const [isFailureRequested, setIsFailureRequested] = useState(false)
 
     const COLUMNS = config.productionStages;
 
     const handleStatusChangeClick = (order: Pedido) => {
+        setIsFailureRequested(false)
         setSelectedOrder(order)
         setIsStatusModalOpen(true)
     }
@@ -43,6 +45,10 @@ export function OrdersKanban({ orders, employees }: OrdersKanbanProps) {
         if (orderId) {
             const order = orders.find(o => o.id === orderId)
             if (order) {
+                // Si arrastramos a una columna de fallo, activamos el modo automáticamente
+                const isDroppingToFailure = newStatus === 'FAILED' || newStatus === 'REPRINT_PENDING'
+                setIsFailureRequested(isDroppingToFailure)
+
                 // Pre-set the status the user dropped into
                 setSelectedOrder({ ...order, estado: newStatus })
                 setIsStatusModalOpen(true)
@@ -150,6 +156,7 @@ export function OrdersKanban({ orders, employees }: OrdersKanbanProps) {
                 isOpen={isStatusModalOpen}
                 onClose={() => setIsStatusModalOpen(false)}
                 employees={employees}
+                defaultFailureMode={isFailureRequested}
             />
         </div>
     )
