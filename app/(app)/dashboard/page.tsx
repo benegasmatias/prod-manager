@@ -120,7 +120,7 @@ export default function DashboardPage() {
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                     <h1 className="text-3xl md:text-4xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 uppercase">Control <span className="text-primary italic">Center</span></h1>
-                    <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mt-1">Monitoreo en tiempo real de {negocioActivo?.nombre || 'tu negocio'}.</p>
+                    <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mt-1">Resumen en tiempo real de {negocioActivo?.nombre || 'tu negocio'}.</p>
                 </div>
                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
                     <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />

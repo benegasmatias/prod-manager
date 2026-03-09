@@ -23,8 +23,8 @@ export default function OrdersPage() {
     const [searchTerm, setSearchTerm] = useState('')
     const [dateDesde, setDateDesde] = useState('')
     const [dateHasta, setDateHasta] = useState('')
-    const [sortKey, setSortKey] = useState<string>('fechaEntrega')
-    const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+    const [sortKey, setSortKey] = useState<string>('fechaActualizacion')
+    const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
     const [employees, setEmployees] = useState<Employee[]>([])
 
     useEffect(() => {
@@ -60,9 +60,9 @@ export default function OrdersPage() {
         let valA: any = a[sortKey as keyof typeof a]
         let valB: any = b[sortKey as keyof typeof b]
 
-        if (sortKey === 'fechaEntrega') {
-            valA = new Date(a.fechaEntrega).getTime()
-            valB = new Date(b.fechaEntrega).getTime()
+        if (sortKey === 'fechaEntrega' || sortKey === 'fechaActualizacion') {
+            valA = new Date(a[sortKey as 'fechaEntrega' | 'fechaActualizacion']).getTime()
+            valB = new Date(b[sortKey as 'fechaEntrega' | 'fechaActualizacion']).getTime()
         }
 
         if (valA < valB) return sortDir === 'asc' ? -1 : 1
@@ -84,8 +84,12 @@ export default function OrdersPage() {
         return c ? c.nombre : 'Cliente Desconocido'
     }
 
+    const activeOrders = sortedOrders.filter(o => o.estado !== 'DELIVERED')
+    const deliveredOrders = sortedOrders.filter(o => o.estado === 'DELIVERED')
+
     return (
         <div className="space-y-8 pb-10">
+            {/* ... header and filters ... */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
                     <h1 className="text-3xl font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-50">Pedidos</h1>
@@ -164,7 +168,7 @@ export default function OrdersPage() {
                             value={estadoFilter}
                             onChange={(e) => setEstadoFilter(e.target.value)}
                         >
-                            <option value="all" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">TODOS LOS ESTADOS</option>
+                            <option value="all" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">TODOS LOS ACTIVOS</option>
                             {config.productionStages.map(stage => (
                                 <option key={stage.key} value={stage.key} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">{stage.label.toUpperCase()}</option>
                             ))}
@@ -192,14 +196,46 @@ export default function OrdersPage() {
                 </div>
             </div>
 
-            <OrdersTable
-                orders={sortedOrders}
-                getClientName={getClientName}
-                sortKey={sortKey}
-                sortDir={sortDir}
-                onSort={handleSort}
-                employees={employees}
-            />
+            <div className="space-y-4">
+                <div className="flex items-center gap-3 ml-2">
+                    <div className="h-2 w-2 rounded-full bg-primary" />
+                    <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-400">Pedidos en Curso</h2>
+                    <span className="text-[10px] font-bold text-zinc-400 tabular-nums">({activeOrders.length})</span>
+                </div>
+                {activeOrders.length > 0 ? (
+                    <OrdersTable
+                        orders={activeOrders}
+                        getClientName={getClientName}
+                        sortKey={sortKey}
+                        sortDir={sortDir}
+                        onSort={handleSort}
+                        employees={employees}
+                    />
+                ) : (
+                    <div className="p-12 text-center rounded-[2rem] border-2 border-dashed border-zinc-100 dark:border-zinc-800">
+                        <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">No hay pedidos activos</p>
+                    </div>
+                )}
+            </div>
+
+            {(estadoFilter === 'all' || estadoFilter === 'DELIVERED') && deliveredOrders.length > 0 && (
+                <div className="pt-8 space-y-6">
+                    <div className="flex items-center gap-4">
+                        <div className="h-[1px] flex-1 bg-zinc-200 dark:bg-zinc-800" />
+                        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Historial de Pedidos Entregados</h2>
+                        <div className="h-[1px] flex-1 bg-zinc-200 dark:bg-zinc-800" />
+                    </div>
+
+                    <OrdersTable
+                        orders={deliveredOrders}
+                        getClientName={getClientName}
+                        sortKey={sortKey}
+                        sortDir={sortDir}
+                        onSort={handleSort}
+                        employees={employees}
+                    />
+                </div>
+            )}
         </div>
     )
 }

@@ -171,7 +171,7 @@ export default function MachinesPage() {
 
     const handleDelete = async () => {
         if (!selectedMachineDetail || !negocioActivoId) return
-        if (!confirm('¿Estás seguro de desactivar esta unidad? No aparecerá más en el monitor activo.')) return
+        if (!confirm('¿Estás seguro de desactivar esta unidad? No aparecerá más en el listado activo.')) return
 
         setSaving(true)
         try {
@@ -227,7 +227,7 @@ export default function MachinesPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
                     <h1 className="text-3xl font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-50">{config.labels.maquinas}</h1>
-                    <p className="text-sm font-medium text-zinc-500 mt-1 italic">Estado y monitoreo de unidades productivas en tiempo real</p>
+                    <p className="text-sm font-medium text-zinc-500 mt-1 italic">Estado y gestión de unidades productivas en tiempo real</p>
                 </div>
                 <Button
                     className="h-12 px-6 rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-black uppercase text-[10px] tracking-widest shadow-lg shadow-zinc-900/10 dark:shadow-none transition-all hover:scale-[1.02] active:scale-[0.98] gap-2 lg:h-14 lg:px-8 lg:text-xs"

@@ -72,9 +72,9 @@ export const api = {
             method: 'PATCH',
             body: JSON.stringify({ status, notes, responsableGeneralId }),
         }),
-        reportFailure: (id: string, reason: string, wastedGrams: number, moveToReprint: boolean, materialId?: string) => fetchApi(`/orders/${id}/fail`, {
+        reportFailure: (id: string, reason: string, wastedGrams: number, moveToReprint: boolean, materialId?: string, metadata?: any) => fetchApi(`/orders/${id}/fail`, {
             method: 'POST',
-            body: JSON.stringify({ reason, wastedGrams, moveToReprint, materialId }),
+            body: JSON.stringify({ reason, wastedGrams, moveToReprint, materialId, metadata }),
         }),
     },
     jobs: {

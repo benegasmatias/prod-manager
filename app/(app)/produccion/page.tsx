@@ -74,7 +74,7 @@ export default function ProductionPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
                     <h1 className="text-3xl font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-50">{config.labels.produccion}</h1>
-                    <p className="text-sm font-medium text-zinc-500 mt-1 italic">Centro de monitoreo táctico y control de avance operativo</p>
+                    <p className="text-sm font-medium text-zinc-500 mt-1 italic">Gestión operativa y control de avance de trabajos</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary animate-pulse">

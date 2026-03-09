@@ -64,9 +64,9 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
     switch (rubro) {
         case 'IMPRESION_3D':
             return {
-                sidebarItems: ['/dashboard', '/pedidos', '/clientes', '/personal', '/produccion', '/maquinas', '/materiales', '/reportes', '/ajustes'],
+                sidebarItems: ['/dashboard', '/pedidos', '/clientes', '/personal', '/maquinas', '/materiales', '/reportes', '/ajustes'],
                 labels: {
-                    produccion: 'Monitor de Impresión',
+                    produccion: 'Producción',
                     items: 'Modelos a Imprimir',
                     maquinas: 'Impresoras',
                     materiales: 'Filamentos',
@@ -81,7 +81,7 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
                 },
                 stats: [
                     ...commonStats,
-                    { key: 'productionOrders', label: 'Impresiones en Proceso', icon: 'Printer', format: 'number' },
+                    { key: 'productionOrders', label: 'Producción en Curso', icon: 'Printer', format: 'number' },
                     { key: 'activePrinters', label: 'Impresoras Activas', icon: 'Zap', format: 'number' },
                 ],
                 productionStages: [

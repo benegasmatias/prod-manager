@@ -60,6 +60,7 @@ export function PedidosProvider({ children }: { children: React.ReactNode }) {
             clientPhone: order.customer?.phone,
             fechaCreacion: order.createdAt,
             fechaEntrega: order.dueDate,
+            fechaActualizacion: order.updatedAt || order.createdAt,
             estado: order.status || 'PENDING',
             observaciones: order.notes || '',
             total: total,
@@ -76,7 +77,9 @@ export function PedidosProvider({ children }: { children: React.ReactNode }) {
                 status: job.status,
                 materialId: job.materialId,
                 notes: job.notes,
-                sortRank: job.sortRank
+                sortRank: job.sortRank,
+                printerId: job.printerId,
+                metadata: job.metadata
             }))
         }
     }

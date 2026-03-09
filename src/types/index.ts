@@ -62,6 +62,9 @@ export type ProductionJob = {
     material?: Material;
     notes?: string;
     sortRank: number;
+    metadata?: any;
+    printerId?: string;
+    printer?: Machine;
 }
 
 export type Pedido = {
@@ -73,6 +76,7 @@ export type Pedido = {
     clientPhone?: string
     fechaCreacion: string
     fechaEntrega: string
+    fechaActualizacion: string
     estado: OrderStatus
     observaciones?: string
     items: ItemPedido[]
