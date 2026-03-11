@@ -50,9 +50,16 @@ export default function SelectBusinessPage() {
         loadData()
     }, [])
 
-    const handleSelect = (id: string) => {
-        setActivo(id)
-        router.push('/dashboard')
+    const handleSelect = async (id: string) => {
+        setActionLoading(id)
+        try {
+            await setActivo(id)
+            router.push('/dashboard')
+        } catch (error) {
+            console.error('Error al seleccionar:', error)
+            setActionLoading(null)
+            toast.error('Error al cargar espacio')
+        }
     }
 
     const handleCreate = async (templateKey: string) => {
@@ -121,13 +128,17 @@ export default function SelectBusinessPage() {
                         businesses.map((n) => (
                             <Card
                                 key={n.id}
-                                className={`group relative hover:border-zinc-900 dark:hover:border-zinc-50 transition-all cursor-pointer shadow-sm border-2 ${defaultId === n.id ? 'border-zinc-900 dark:border-zinc-50' : 'border-transparent'}`}
+                                className={`group relative hover:border-zinc-900 dark:hover:border-zinc-50 transition-all cursor-pointer shadow-sm border-2 ${defaultId === n.id ? 'border-zinc-900 dark:border-zinc-50' : 'border-transparent'} ${actionLoading === n.id ? 'opacity-50 pointer-events-none' : ''}`}
                                 onClick={() => handleSelect(n.id)}
                             >
                                 <CardContent className="p-6 space-y-4">
                                     <div className="flex justify-between items-start">
                                         <div className="p-3 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 group-hover:bg-zinc-900 group-hover:text-white dark:group-hover:bg-zinc-50 dark:group-hover:text-zinc-900 transition-colors">
-                                            <Briefcase className="h-6 w-6" />
+                                            {actionLoading === n.id ? (
+                                                <Loader2 className="h-6 w-6 animate-spin" />
+                                            ) : (
+                                                <Briefcase className="h-6 w-6" />
+                                            )}
                                         </div>
                                         {defaultId === n.id && (
                                             <Badge variant="secondary" className="bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900 font-bold gap-1 text-[10px] uppercase">
@@ -167,13 +178,17 @@ export default function SelectBusinessPage() {
                         templates.map((t) => (
                             <Card
                                 key={t.key}
-                                className="group relative hover:border-zinc-900 dark:hover:border-zinc-50 transition-all cursor-pointer shadow-sm border-2 border-transparent"
+                                className={`group relative hover:border-zinc-900 dark:hover:border-zinc-50 transition-all cursor-pointer shadow-sm border-2 border-transparent ${actionLoading === t.key ? 'opacity-50 pointer-events-none' : ''}`}
                                 onClick={() => handleCreate(t.key)}
                             >
                                 <CardContent className="p-6 space-y-4">
                                     <div className="flex justify-between items-start">
                                         <div className="p-3 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 group-hover:bg-zinc-900 group-hover:text-white dark:group-hover:bg-zinc-50 dark:group-hover:text-zinc-900 transition-colors">
-                                            <Briefcase className="h-6 w-6" />
+                                            {actionLoading === t.key ? (
+                                                <Loader2 className="h-6 w-6 animate-spin" />
+                                            ) : (
+                                                <Briefcase className="h-6 w-6" />
+                                            )}
                                         </div>
                                     </div>
 

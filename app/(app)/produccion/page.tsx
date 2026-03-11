@@ -7,8 +7,9 @@ import { useNegocio } from '@/src/context/NegocioContext'
 import { usePedidos } from '@/src/context/PedidosContext'
 import { api } from '@/src/lib/api'
 import { Button } from '@/src/components/ui/button'
-import { Plus, CheckCircle2, Printer, Layers, Loader2 } from 'lucide-react'
+import { Plus, CheckCircle2, Printer, Layers, Loader2, User } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { cn } from '@/src/lib/utils'
 
 export default function ProductionPage() {
     const { negocioActivoId, config } = useNegocio()
@@ -210,5 +211,3 @@ export default function ProductionPage() {
     )
 }
 
-import { cn } from '@/src/lib/utils'
-import { User } from 'lucide-react'

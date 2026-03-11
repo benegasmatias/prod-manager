@@ -28,15 +28,15 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     const [error, setError] = useState<string | null>(null)
 
     const fetchNotifications = useCallback(async () => {
+        if (!negocioActivoId) return
+
         try {
             setIsLoading(true)
             setError(null)
-            const [list, countData] = await Promise.all([
-                api.notifications.getAll(negocioActivoId || undefined),
-                api.notifications.getUnreadCount(negocioActivoId || undefined)
-            ])
-            setNotifications(list as Notification[])
-            setUnreadCount(countData.count)
+            const list = await api.notifications.getAll(negocioActivoId)
+            const notificationList = list as Notification[]
+            setNotifications(notificationList)
+            setUnreadCount(notificationList.filter(n => !n.isRead).length)
         } catch (err: any) {
             console.error('Error fetching notifications:', err)
             setError('Error al cargar notificaciones')

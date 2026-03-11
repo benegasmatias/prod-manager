@@ -33,7 +33,8 @@ export default function ClientsPage() {
 
     // Buscador con Debounce para el backend
     useEffect(() => {
-        // Evitar doble fetch al montar si el buscador está vacío (ya lo hace el Context)
+        // Al montar (isFirstRun), si el buscador está vacío NO refrescamos,
+        // porque el Context ya se encarga de la carga inicial al entrar a la ruta.
         if (isFirstRun.current) {
             isFirstRun.current = false
             if (!searchTerm) return
@@ -140,7 +141,7 @@ export default function ClientsPage() {
                                         <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-white dark:hover:bg-zinc-800 hover:text-primary shadow-sm transition-all border border-transparent hover:border-zinc-100 dark:hover:border-zinc-700" onClick={() => handleEdit(client)}>
                                             <Pencil className="h-4 w-4" />
                                         </Button>
-                                        <Link href={`/clientes/${client.id}`}>
+                                        <Link href={`/clientes/${client.id}`} prefetch={false}>
                                             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-white dark:hover:bg-zinc-800 hover:text-primary shadow-sm transition-all border border-transparent hover:border-zinc-100 dark:hover:border-zinc-700">
                                                 <ExternalLink className="h-4 w-4" />
                                             </Button>
@@ -205,7 +206,7 @@ export default function ClientsPage() {
                         </div>
 
                         <div className="pt-5 flex items-center justify-between">
-                            <Link href={`/clientes/${client.id}`} className="flex-1 mr-2">
+                            <Link href={`/clientes/${client.id}`} prefetch={false} className="flex-1 mr-2">
                                 <Button className="w-full h-10 rounded-xl font-bold text-xs uppercase tracking-wider bg-zinc-900 dark:bg-zinc-50 dark:text-zinc-900">
                                     Ver Expediente <ExternalLink className="ml-2 h-3.5 w-3.5" />
                                 </Button>

@@ -27,7 +27,12 @@ import {
     Hammer,
     Trees,
     Clock,
-    HardHat
+    HardHat,
+    PackageSearch,
+    Activity,
+    UserCog,
+    Database,
+    Zap
 } from 'lucide-react'
 import { Button } from './ui/button'
 import { useSidebar } from '@/src/context/SidebarContext'
@@ -35,26 +40,47 @@ import { useSidebar } from '@/src/context/SidebarContext'
 const ICON_MAP: Record<string, any> = {
     LayoutDashboard, ShoppingCart, Users, Wrench, Cpu, BarChart3, Settings,
     Package, Layers, Box, Printer, FileText, Cog, Grid, ClipboardList,
-    Hammer, Trees, Clock, HardHat
+    Hammer, Trees, Clock, HardHat, PackageSearch, Activity, UserCog, Database, Zap
 }
 
-const MENU_ITEMS_CORE = [
-    { label: 'Panel', href: '/dashboard', iconKey: 'LayoutDashboard' },
-    { label: 'Pedidos', href: '/pedidos', iconKey: 'pedidos' },
-    { label: 'Clientes', href: '/clientes', iconKey: 'Users' },
-    { label: 'Personal', href: '/personal', iconKey: 'HardHat' },
+const MENU_GROUPS = [
+    {
+        title: 'Principal',
+        items: [
+            { label: 'Dashboard', href: '/dashboard', iconKey: 'LayoutDashboard' },
+        ]
+    },
+    {
+        title: 'Comercial',
+        items: [
+            { label: 'Pedidos', href: '/pedidos', iconKey: 'pedidos' },
+            { label: 'Clientes', href: '/clientes', iconKey: 'Users' },
+        ]
+    },
+    {
+        title: 'Operaciones',
+        items: [
+            { label: 'Producción', href: '/produccion', iconKey: 'produccion' },
+            { label: 'Inventario', href: '/stock', iconKey: 'inventario' },
+        ]
+    },
+    {
+        title: 'Mi Taller',
+        items: [
+            { label: 'Maquinaria', href: '/maquinas', iconKey: 'maquinas' },
+            { label: 'Materiales', href: '/materiales', iconKey: 'materiales' },
+            { label: 'Equipo', href: '/personal', iconKey: 'UserCog' },
+        ]
+    }
 ]
 
-const MENU_ITEMS_PROD = [
-    { label: 'Producción', href: '/produccion', iconKey: 'produccion' },
-    { label: 'Máquinas', href: '/maquinas', iconKey: 'maquinas' },
-    { label: 'Materiales', href: '/materiales', iconKey: 'materiales' },
-]
-
-const MENU_ITEMS_SYSTEM = [
-    { label: 'Reportes', href: '/reportes', iconKey: 'BarChart3' },
-    { label: 'Ajustes', href: '/ajustes', iconKey: 'Settings' },
-]
+const SYSTEM_GROUP = {
+    title: 'Sistema',
+    items: [
+        { label: 'Reportes', href: '/reportes', iconKey: 'BarChart3' },
+        { label: 'Ajustes', href: '/ajustes', iconKey: 'Settings' },
+    ]
+}
 
 interface SidebarItemProps {
     item: { label: string, href: string, icon: any }
@@ -69,6 +95,7 @@ function SidebarItem({ item, isActive, isCollapsed, onItemClick }: SidebarItemPr
         <Link
             href={item.href}
             onClick={onItemClick}
+            prefetch={false}
             className={cn(
                 "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                 isActive
@@ -94,16 +121,17 @@ export function SidebarContent({ onItemClick, isCollapsed = false }: { onItemCli
 
     if (!negocioActivo) return null
 
+
     const filterAndMap = (items: any[]) =>
         items.filter(item => config.sidebarItems.includes(item.href))
             .map(item => {
-                // Determine Label
                 let label = item.label
                 if (item.href === '/produccion') label = config.labels.produccion
                 if (item.href === '/maquinas') label = config.labels.maquinas
                 if (item.href === '/materiales') label = config.labels.materiales
+                if (item.href === '/stock') label = 'Inventario'
+                if (item.href === '/personal') label = 'Equipo'
 
-                // Determine Icon
                 let iconKey = item.iconKey
                 if (config.icons[item.iconKey]) iconKey = config.icons[item.iconKey]
 
@@ -114,10 +142,6 @@ export function SidebarContent({ onItemClick, isCollapsed = false }: { onItemCli
                 }
             })
 
-    const coreItems = filterAndMap(MENU_ITEMS_CORE)
-    const prodItems = filterAndMap(MENU_ITEMS_PROD)
-    const systemItems = filterAndMap(MENU_ITEMS_SYSTEM)
-
     return (
         <div className="flex flex-col h-full">
             <div className={cn(
@@ -125,7 +149,7 @@ export function SidebarContent({ onItemClick, isCollapsed = false }: { onItemCli
                 isCollapsed && "justify-center px-0"
             )}>
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
-                    <Package className="h-6 w-6" />
+                    <Activity className="h-6 w-6" />
                 </div>
                 {!isCollapsed && (
                     <div className="flex flex-col truncate">
@@ -136,26 +160,44 @@ export function SidebarContent({ onItemClick, isCollapsed = false }: { onItemCli
             </div>
 
             <div className="flex flex-col gap-6 overflow-y-auto no-scrollbar pb-8">
-                <nav className="space-y-1">
-                    {!isCollapsed && <span className="px-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 block">General</span>}
-                    {coreItems.map(item => (
-                        <SidebarItem key={item.href} item={item} isActive={pathname === item.href} isCollapsed={isCollapsed} onItemClick={onItemClick} />
-                    ))}
-                </nav>
+                {MENU_GROUPS.map(group => {
+                    const mappedItems = filterAndMap(group.items)
+                    if (mappedItems.length === 0) return null
 
-                {prodItems.length > 0 && (
-                    <nav className="space-y-1 border-t border-zinc-100 pt-4 dark:border-zinc-800/50">
-                        {!isCollapsed && <span className="px-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 block">Producción</span>}
-                        {prodItems.map(item => (
-                            <SidebarItem key={item.href} item={item} isActive={pathname === item.href} isCollapsed={isCollapsed} onItemClick={onItemClick} />
-                        ))}
-                    </nav>
-                )}
+                    return (
+                        <nav key={group.title} className="space-y-1">
+                            {!isCollapsed && (
+                                <span className="px-3 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400/80 mb-2 block">
+                                    {group.title}
+                                </span>
+                            )}
+                            {mappedItems.map(item => (
+                                <SidebarItem
+                                    key={item.href}
+                                    item={item}
+                                    isActive={pathname === item.href}
+                                    isCollapsed={isCollapsed}
+                                    onItemClick={onItemClick}
+                                />
+                            ))}
+                        </nav>
+                    )
+                })}
 
-                <nav className="space-y-1 border-t border-zinc-100 pt-4 dark:border-zinc-800/50">
-                    {!isCollapsed && <span className="px-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 block">Sistema</span>}
-                    {systemItems.map(item => (
-                        <SidebarItem key={item.href} item={item} isActive={pathname === item.href} isCollapsed={isCollapsed} onItemClick={onItemClick} />
+                <nav className="space-y-1 border-t border-zinc-100 pt-6 dark:border-zinc-800/50">
+                    {!isCollapsed && (
+                        <span className="px-3 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400/80 mb-2 block">
+                            Configuración
+                        </span>
+                    )}
+                    {filterAndMap(SYSTEM_GROUP.items).map(item => (
+                        <SidebarItem
+                            key={item.href}
+                            item={item}
+                            isActive={pathname === item.href}
+                            isCollapsed={isCollapsed}
+                            onItemClick={onItemClick}
+                        />
                     ))}
                 </nav>
             </div>

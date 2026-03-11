@@ -41,6 +41,8 @@ export type ItemPedido = {
     refuerzos?: boolean
     revestimiento?: string
     metadata?: any
+    estimatedUnitCost?: number
+    estimatedSaleUnitPrice?: number
 }
 
 export type Employee = {
@@ -67,10 +69,28 @@ export type ProductionJob = {
     printer?: Machine;
 }
 
+export interface OrderStatusHistory {
+    id: string
+    changedAt: string
+    fromStatus: OrderStatus | null
+    toStatus: OrderStatus
+    note?: string
+    performedBy?: { firstName: string, lastName?: string }
+}
+
+export interface OrderFailure {
+    id: string
+    reason: string
+    wastedGrams: number
+    material?: { name: string, type: string }
+    createdAt: string
+}
+
 export type Pedido = {
     id: string
     negocioId: string
     numero: string
+    type?: 'CUSTOMER' | 'STOCK'
     clienteId: string
     clientName: string
     clientPhone?: string
@@ -88,6 +108,8 @@ export type Pedido = {
     urgencia: Priority
     responsableGeneral?: Employee
     jobs?: ProductionJob[]
+    statusHistory?: OrderStatusHistory[]
+    failures?: OrderFailure[]
 }
 
 export interface OrderItem {
@@ -106,6 +128,8 @@ export interface OrderItem {
     medidas?: string;
     material?: string;
     terminacion?: string;
+    estimatedUnitCost?: number;
+    estimatedSaleUnitPrice?: number;
 }
 
 export interface Order {

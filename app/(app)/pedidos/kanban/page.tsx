@@ -23,7 +23,10 @@ export default function KanbanPage() {
         }
     }, [negocioActivoId])
 
-    const orders = pedidos[negocioActivoId] || []
+    const orders = (pedidos[negocioActivoId] || []).filter(o =>
+        o.type !== 'STOCK' &&
+        o.clientName?.trim().toUpperCase() !== 'STOCK'
+    )
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">

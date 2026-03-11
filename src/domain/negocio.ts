@@ -14,7 +14,7 @@ export interface Negocio {
 export interface CampoItem {
     key: string;
     label: string;
-    tipo: 'text' | 'number' | 'url' | 'textarea' | 'select' | 'boolean' | 'header';
+    tipo: 'text' | 'number' | 'url' | 'textarea' | 'select' | 'boolean' | 'header' | 'material-select';
     required?: boolean;
     section?: string;
     options?: string[];
@@ -64,7 +64,7 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
     switch (rubro) {
         case 'IMPRESION_3D':
             return {
-                sidebarItems: ['/dashboard', '/pedidos', '/clientes', '/personal', '/maquinas', '/materiales', '/reportes', '/ajustes'],
+                sidebarItems: ['/dashboard', '/pedidos', '/stock', '/clientes', '/personal', '/maquinas', '/materiales', '/reportes', '/ajustes'],
                 labels: {
                     produccion: 'Producción',
                     items: 'Modelos a Imprimir',
@@ -94,6 +94,7 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
                     { key: 'POST_PROCESS', label: 'Post-Proceso', color: 'bg-amber-500' },
                     { key: 'DONE', label: 'Terminado', color: 'bg-emerald-500' },
                     { key: 'DELIVERED', label: 'Entregado', color: 'bg-zinc-100' },
+                    { key: 'IN_STOCK', label: 'Ingresado a Stock', color: 'bg-purple-500' },
                 ],
                 materialConfig: {
                     namePlaceholder: 'Ej: PLA Negro Pro / PETG Gris',
@@ -115,6 +116,7 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
                 },
                 itemFields: [
                     { key: 'nombreProducto', label: 'Nombre del Modelo / Trabajo', tipo: 'text', section: 'INFORMACIÓN DEL TRABAJO', required: true, placeholder: 'Ej. Llavero de pared' },
+                    { key: 'material_id', label: 'Filamento / Material', tipo: 'material-select', section: 'INFORMACIÓN DEL TRABAJO', required: true },
                     { key: 'seDiseñaSTL', label: '¿Se diseña el STL?', tipo: 'boolean', section: 'INFORMACIÓN DEL TRABAJO' },
                     { key: 'precioDiseno', label: 'Costo de Diseño ($)', tipo: 'number', section: 'INFORMACIÓN DEL TRABAJO', placeholder: 'Ej. 2500' },
                     { key: 'url_stl', label: 'URL STL', tipo: 'url', section: 'INFORMACIÓN DEL TRABAJO', placeholder: 'https://...' },
@@ -126,7 +128,7 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
 
         case 'METALURGICA':
             return {
-                sidebarItems: ['/dashboard', '/pedidos', '/clientes', '/personal', '/materiales', '/maquinas', '/reportes', '/ajustes'],
+                sidebarItems: ['/dashboard', '/pedidos', '/stock', '/clientes', '/personal', '/materiales', '/maquinas', '/reportes', '/ajustes'],
                 labels: {
                     produccion: 'Monitor de Taller',
                     items: 'Planos y Estructuras',
@@ -152,8 +154,11 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
                     { key: 'WELDING', label: 'Soldadura', color: 'bg-blue-600' },
                     { key: 'ASSEMBLY', label: 'Armado', color: 'bg-amber-600' },
                     { key: 'PAINTING', label: 'Pintura', color: 'bg-purple-500' },
+                    { key: 'FAILED', label: 'Fallo / Error', color: 'bg-red-500' },
+                    { key: 'RE_WORK', label: 'En Reparación', color: 'bg-orange-400' },
                     { key: 'DONE', label: 'Listo p/ Entrega', color: 'bg-emerald-500' },
                     { key: 'DELIVERED', label: 'Entregado', color: 'bg-zinc-100' },
+                    { key: 'IN_STOCK', label: 'Ingresado a Stock', color: 'bg-purple-500' },
                 ],
                 materialConfig: {
                     namePlaceholder: 'Ej: Caño 40x40 / Chapa N18 / Electrodo 6013',
@@ -197,7 +202,7 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
 
         case 'CARPINTERIA':
             return {
-                sidebarItems: ['/dashboard', '/pedidos', '/clientes', '/personal', '/produccion', '/reportes', '/ajustes'],
+                sidebarItems: ['/dashboard', '/pedidos', '/stock', '/clientes', '/personal', '/produccion', '/reportes', '/ajustes'],
                 labels: {
                     produccion: 'Estado de Armado',
                     items: 'Muebles y Componentes',
@@ -222,8 +227,11 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
                     { key: 'CUTTING', label: 'Corte de Placas', color: 'bg-orange-400' },
                     { key: 'ARMADO', label: 'En Armado', color: 'bg-blue-500' },
                     { key: 'BARNIZADO', label: 'Lustre / Barniz', color: 'bg-amber-600' },
+                    { key: 'FAILED', label: 'Rehacer / Error', color: 'bg-red-500' },
+                    { key: 'RE_WORK', label: 'En Ajuste / Reparación', color: 'bg-orange-400' },
                     { key: 'DONE', label: 'Terminado', color: 'bg-emerald-500' },
                     { key: 'DELIVERED', label: 'Entregado', color: 'bg-zinc-100' },
+                    { key: 'IN_STOCK', label: 'Ingresado a Stock', color: 'bg-purple-500' },
                 ],
                 materialConfig: {
                     namePlaceholder: 'Ej: Placa Melamina 18mm / Cola Vinílica',
@@ -255,7 +263,7 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
         case 'GENERICO':
         default:
             return {
-                sidebarItems: ['/dashboard', '/pedidos', '/clientes', '/personal', '/produccion', '/reportes', '/ajustes'],
+                sidebarItems: ['/dashboard', '/pedidos', '/stock', '/clientes', '/personal', '/produccion', '/reportes', '/ajustes'],
                 labels: {
                     produccion: 'Producción',
                     items: 'Ítems de Pedido',
@@ -278,8 +286,11 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
                 productionStages: [
                     { key: 'PENDING', label: 'Pendiente', color: 'bg-zinc-100' },
                     { key: 'IN_PROGRESS', label: 'En Proceso', color: 'bg-blue-500' },
+                    { key: 'FAILED', label: 'Fallo / Error', color: 'bg-red-500' },
+                    { key: 'RE_WORK', label: 'En Reparación', color: 'bg-orange-400' },
                     { key: 'DONE', label: 'Terminado', color: 'bg-emerald-500' },
                     { key: 'DELIVERED', label: 'Entregado', color: 'bg-zinc-100' },
+                    { key: 'IN_STOCK', label: 'Ingresado a Stock', color: 'bg-purple-500' },
                 ],
                 materialConfig: {
                     namePlaceholder: 'Ej: Insumo General / Producto',

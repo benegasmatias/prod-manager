@@ -146,7 +146,7 @@ export function NotificationDropdown() {
                                         {(n.actionUrl || !n.isRead) && (
                                             <div className="flex gap-3 pt-2">
                                                 {n.actionUrl && (
-                                                    <Link href={n.actionUrl} className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline flex items-center gap-1">
+                                                    <Link href={n.actionUrl} prefetch={false} className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline flex items-center gap-1">
                                                         {n.actionLabel || 'Ver más'}
                                                         <ExternalLink className="h-2.5 w-2.5" />
                                                     </Link>

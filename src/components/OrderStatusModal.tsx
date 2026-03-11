@@ -33,11 +33,23 @@ interface OrderStatusModalProps {
 
 export function OrderStatusModal({ order, isOpen, onClose, employees, defaultFailureMode }: OrderStatusModalProps) {
     const { config, user: profile } = useNegocio()
-    const { updatePedido, refresh } = usePedidos()
+    const { updatePedido, registerPayment, refresh } = usePedidos()
 
     const allStages = config.productionStages
-    const stages = allStages.filter(s => s.key !== 'FAILED' && s.key !== 'REPRINT_PENDING')
-    const hasPrintingSystem = allStages.some(s => s.key === 'FAILED')
+    const is3D = config.labels.produccion.includes('Impresión')
+    const stages = allStages.filter(s => {
+        if (s.key === 'FAILED') return false
+        if (is3D && s.key === 'REPRINT_PENDING') return false
+
+        // Solo mostrar ingreso a stock en órdenes de stock
+        if (s.key === 'IN_STOCK' && order?.type !== 'STOCK') return false
+
+        // Ocultar entregado en órdenes de stock (ya que terminan en stock)
+        if (s.key === 'DELIVERED' && order?.type === 'STOCK') return false
+
+        return true
+    })
+    const hasFailureReporting = allStages.some(s => s.key === 'FAILED')
 
     const [status, setStatus] = useState<string>('')
     const [responsableId, setResponsableId] = useState<string>('')
@@ -55,10 +67,13 @@ export function OrderStatusModal({ order, isOpen, onClose, employees, defaultFai
     const [multiMaterials, setMultiMaterials] = useState<{ materialId: string, gramsPerUnit: number }[]>([])
     const [failureMaterials, setFailureMaterials] = useState<{ materialId: string, wastedGrams: number }[]>([])
 
-    // Machines State
     const [machines, setMachines] = useState<Machine[]>([])
     const [selectedMachineId, setSelectedMachineId] = useState<string>('')
     const [isLoadingMachines, setIsLoadingMachines] = useState(false)
+
+    // Payment State
+    const [shouldPayBalance, setShouldPayBalance] = useState(false)
+    const [paymentMethod, setPaymentMethod] = useState<string>('CASH')
 
     // Sincronizar estado inicial cuando el modal se abre
     React.useEffect(() => {
@@ -86,8 +101,10 @@ export function OrderStatusModal({ order, isOpen, onClose, employees, defaultFai
             setFailureReason('')
             setSelectedMaterialId('')
             setFailureMaterials([])
+            setShouldPayBalance(false)
+            setPaymentMethod('CASH')
 
-            if (hasPrintingSystem && isOpen) {
+            if (hasFailureReporting && isOpen) {
                 const fetchData = async () => {
                     setIsLoadingMaterials(true)
                     setIsLoadingMachines(true)
@@ -145,7 +162,7 @@ export function OrderStatusModal({ order, isOpen, onClose, employees, defaultFai
                 fetchData()
             }
         }
-    }, [order, isOpen, profile, employees, defaultFailureMode, hasPrintingSystem])
+    }, [order, isOpen, profile, employees, defaultFailureMode, hasFailureReporting])
 
     if (!order) return null
 
@@ -160,13 +177,14 @@ export function OrderStatusModal({ order, isOpen, onClose, employees, defaultFai
                 }
                 const metadata = { materials: failureMaterials };
                 const firstMaterialId = failureMaterials.find(m => m.materialId)?.materialId || undefined;
-                await api.orders.reportFailure(order.id, failureReason, totalWasted, moveToReprint, firstMaterialId, metadata)
-                toast.success('Fallo de impresión registrado correctamente.')
+                const targetStatus = !moveToReprint ? 'FAILED' : (is3D ? 'REPRINT_PENDING' : 'RE_WORK');
+                await api.orders.reportFailure(order.id, failureReason, totalWasted, moveToReprint, firstMaterialId, metadata, targetStatus)
+                toast.success('Incidencia registrada correctamente.')
                 await refresh()
                 onClose()
             } else {
                 const selectedEmployee = employees.find(e => e.id === responsableId)
-                if (status === 'IN_PROGRESS' && hasPrintingSystem && selectedMachineId) {
+                if (status === 'IN_PROGRESS' && hasFailureReporting && selectedMachineId) {
                     const validMaterials = multiMaterials.filter(m => m.materialId && m.gramsPerUnit > 0);
                     const metadata = validMaterials.length > 0 ? { materials: validMaterials } : undefined;
                     const firstMaterialId = validMaterials[0]?.materialId || undefined;
@@ -183,6 +201,16 @@ export function OrderStatusModal({ order, isOpen, onClose, employees, defaultFai
                         } as any)
                     }
                 } else {
+                    // Si se marca como ENTREGADO y se confirmó el cobro del saldo
+                    if (status === 'DELIVERED' && shouldPayBalance && (order.saldo || 0) > 0) {
+                        try {
+                            await registerPayment(order.id, order.saldo, paymentMethod)
+                        } catch (err) {
+                            console.error('Error auto-registering payment:', err)
+                            throw new Error('No se pudo registrar el pago. Verificá los datos.')
+                        }
+                    }
+
                     await updatePedido(order.negocioId, order.id, {
                         estado: status,
                         responsableGeneral: selectedEmployee,
@@ -259,6 +287,18 @@ export function OrderStatusModal({ order, isOpen, onClose, employees, defaultFai
                                     {stages.map((stage) => {
                                         const isSelected = status === stage.key
                                         const baseColor = stage.color.split('-')[1]
+
+                                        // Estilos consistentes con getStatusStyles de la página principal
+                                        let activeStyles = `bg-${baseColor}-50/50 border-${baseColor}-200 dark:bg-${baseColor}-950/20 dark:border-${baseColor}-900/50`
+                                        let textActive = `text-${baseColor}-700 dark:text-${baseColor}-400`
+                                        let bulletActive = `bg-${baseColor}-500 scale-125 shadow-[0_0_8px_rgba(0,0,0,0.3)]`
+
+                                        if (baseColor === 'zinc') {
+                                            activeStyles = 'bg-zinc-100 border-zinc-200 dark:bg-zinc-800/50 dark:border-zinc-700'
+                                            textActive = 'text-zinc-900 dark:text-zinc-100'
+                                            bulletActive = 'bg-zinc-400 scale-125'
+                                        }
+
                                         return (
                                             <button
                                                 key={stage.key}
@@ -266,22 +306,22 @@ export function OrderStatusModal({ order, isOpen, onClose, employees, defaultFai
                                                 className={cn(
                                                     "flex flex-col gap-1 px-4 py-3.5 rounded-[1.25rem] border transition-all text-left relative group overflow-hidden",
                                                     isSelected
-                                                        ? `bg-${baseColor}-50/50 border-${baseColor}-200 dark:bg-${baseColor}-950/20 dark:border-${baseColor}-900/50`
+                                                        ? activeStyles
                                                         : "bg-white dark:bg-zinc-900 border-zinc-100 dark:border-zinc-800 hover:border-zinc-200"
                                                 )}
                                             >
                                                 <div className="flex items-center gap-2">
                                                     <div className={cn(
                                                         "h-1.5 w-1.5 rounded-full transition-all duration-300",
-                                                        isSelected ? `bg-${baseColor}-500 scale-125 shadow-[0_0_8px_rgba(0,0,0,0.3)]` : "bg-zinc-300"
+                                                        isSelected ? bulletActive : "bg-zinc-300"
                                                     )} />
                                                     <span className={cn(
                                                         "text-[12px] font-black uppercase tracking-tight",
-                                                        isSelected ? `text-${baseColor}-700 dark:text-${baseColor}-400` : "text-zinc-500"
+                                                        isSelected ? textActive : "text-zinc-500"
                                                     )}>{stage.label}</span>
                                                 </div>
                                                 {isSelected && (
-                                                    <div className={cn(`absolute -right-2 -bottom-2 opacity-5 scale-150 rotate-12 transition-all duration-700`, `text-${baseColor}-600`)}>
+                                                    <div className={cn(`absolute -right-2 -bottom-2 opacity-5 scale-150 rotate-12 transition-all duration-700`, isSelected && (baseColor === 'zinc' ? 'text-zinc-900' : `text-${baseColor}-600`))}>
                                                         <CheckCircle2 size={40} />
                                                     </div>
                                                 )}
@@ -292,7 +332,7 @@ export function OrderStatusModal({ order, isOpen, onClose, employees, defaultFai
                             </div>
 
                             {/* PRO IMPRESIÓN 3D */}
-                            {status === 'IN_PROGRESS' && hasPrintingSystem && (
+                            {status === 'IN_PROGRESS' && hasFailureReporting && (
                                 <div className="space-y-6 animate-in zoom-in-95 fade-in duration-300 p-6 rounded-[2.5rem] bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-100 dark:border-zinc-800/50 relative overflow-hidden group">
                                     <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
                                         <Layers size={100} />
@@ -412,8 +452,62 @@ export function OrderStatusModal({ order, isOpen, onClose, employees, defaultFai
                                 </div>
                             </div>
 
-                            {/* EMERGENCY FALLOUT */}
-                            {hasPrintingSystem && (order.estado === 'IN_PROGRESS' || order.estado === 'POST_PROCESS') && (
+                            {/* CONTROL DE COBRO AL ENTREGAR */}
+                            {status === 'DELIVERED' && (order.saldo || 0) > 0 && (
+                                <div className="p-6 rounded-[2.5rem] bg-emerald-50/50 dark:bg-emerald-950/10 border-2 border-emerald-100 dark:border-emerald-900/30 space-y-4 animate-in zoom-in-95 duration-500">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                                                <CheckCircle2 size={18} />
+                                            </div>
+                                            <div>
+                                                <span className="block text-[11px] font-black uppercase text-emerald-600 tracking-tight">Saldo Pendiente</span>
+                                                <span className="block text-lg font-black text-emerald-700 dark:text-emerald-400">$ {(order.saldo || 0).toLocaleString('es-AR')}</span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShouldPayBalance(!shouldPayBalance)}
+                                            className={cn(
+                                                "h-10 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                                shouldPayBalance
+                                                    ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/20"
+                                                    : "bg-white dark:bg-zinc-900 border border-emerald-200 dark:border-emerald-800 text-emerald-600"
+                                            )}
+                                        >
+                                            {shouldPayBalance ? 'SALDAR AHORA' : 'SALDAR DEUDA?'}
+                                        </button>
+                                    </div>
+
+                                    {shouldPayBalance && (
+                                        <div className="pt-4 border-t border-emerald-100 dark:border-emerald-900/30 grid grid-cols-2 gap-2">
+                                            {[
+                                                { key: 'CASH', label: 'Efectivo' },
+                                                { key: 'TRANSFER', label: 'Transf.' },
+                                                { key: 'MP', label: 'MercadoPago' },
+                                                { key: 'CARD', label: 'Tarjeta' }
+                                            ].map((m) => (
+                                                <button
+                                                    key={m.key}
+                                                    type="button"
+                                                    onClick={() => setPaymentMethod(m.key)}
+                                                    className={cn(
+                                                        "h-10 rounded-xl text-[10px] font-black uppercase border transition-all",
+                                                        paymentMethod === m.key
+                                                            ? "bg-emerald-100 border-emerald-300 text-emerald-700 dark:bg-emerald-900 dark:border-emerald-700 dark:text-emerald-300"
+                                                            : "bg-white/50 border-emerald-100 dark:bg-zinc-900/50 dark:border-emerald-900/10 text-emerald-600/50"
+                                                    )}
+                                                >
+                                                    {m.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* EMERGENCY FALLOUT / REPORTAR FALLO */}
+                            {hasFailureReporting && order.estado !== 'DONE' && order.estado !== 'DELIVERED' && (
                                 <button
                                     onClick={(e) => { e.preventDefault(); setIsFailureMode(true) }}
                                     className="w-full p-4 rounded-3xl bg-red-500/5 border border-red-500/10 hover:bg-red-500/10 transition-all group flex items-center justify-between"
@@ -423,8 +517,8 @@ export function OrderStatusModal({ order, isOpen, onClose, employees, defaultFai
                                             <AlertOctagon size={18} />
                                         </div>
                                         <div className="text-left">
-                                            <span className="block text-[11px] font-black uppercase text-red-600 tracking-tight">Reportar Incidencia Crítica</span>
-                                            <span className="block text-[9px] font-medium text-red-500/60 uppercase">Detección de fallo o paro de máquina</span>
+                                            <span className="block text-[11px] font-black uppercase text-red-600 tracking-tight">Reportar Fallo / Error</span>
+                                            <span className="block text-[9px] font-medium text-red-500/60 uppercase">Registrar descarte o reparación</span>
                                         </div>
                                     </div>
                                     <Plus className="text-red-300" size={16} />
@@ -509,8 +603,8 @@ export function OrderStatusModal({ order, isOpen, onClose, employees, defaultFai
                                                 : "bg-zinc-50 dark:bg-zinc-900 border-zinc-100 dark:border-zinc-800 text-zinc-400"
                                         )}
                                     >
-                                        <span className="text-[13px] font-black uppercase leading-none">Repetir</span>
-                                        <span className="text-[10px] font-bold opacity-70">A fila de impresión</span>
+                                        <span className="text-[13px] font-black uppercase leading-none">{is3D ? 'Repetir' : 'Reparar'}</span>
+                                        <span className="text-[10px] font-bold opacity-70">{is3D ? 'A fila de impresión' : 'A taller para ajuste'}</span>
                                     </button>
                                     <button
                                         onClick={() => setMoveToReprint(false)}

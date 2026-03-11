@@ -12,7 +12,7 @@ interface NegocioContextType {
     config: NegocioConfig
     user: any | null
     isInitialized: boolean
-    setActivo: (id: string) => void
+    setActivo: (id: string) => Promise<void>
     loadNegocios: () => Promise<Negocio[]>
     addNegocio: (nombre: string, rubro: Rubro) => Promise<any>
     updateNegocio: (id: string, data: Partial<Negocio>) => Promise<void>
@@ -99,11 +99,16 @@ export function NegocioProvider({ children }: { children: React.ReactNode }) {
         }
     }, [negocioActivoId, isInitialized])
 
-    const setActivo = useCallback((id: string) => {
+    const setActivo = useCallback(async (id: string) => {
         setNegocioActivoId(id)
-        api.users.setDefaultBusiness(null, id).catch(err => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('prodmanager_negocio_activo', id)
+        }
+        try {
+            await api.users.setDefaultBusiness(null, id)
+        } catch (err) {
             console.error('[NegocioContext] Error persistiendo negocio por defecto:', err)
-        })
+        }
     }, [])
 
     const addNegocio = useCallback(async (nombre: string, rubro: Rubro) => {

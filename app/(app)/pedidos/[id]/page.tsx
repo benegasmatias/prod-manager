@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { Pedido, ItemPedido } from '@/src/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card'
@@ -8,7 +8,7 @@ import { BadgeUrgencia } from '@/src/components/BadgeUrgencia'
 import { Badge } from '@/src/components/ui/badge'
 import { Money } from '@/src/components/Money'
 import { Button } from '@/src/components/ui/button'
-import { ArrowLeft, Save, Printer, Trash2 } from 'lucide-react'
+import { ArrowLeft, Save, Printer, Trash2, Edit3, X, Copy } from 'lucide-react'
 import Link from 'next/link'
 import { Input } from '@/src/components/ui/input'
 import { Label } from '@/src/components/ui/label'
@@ -44,9 +44,9 @@ export default function OrderDetailPage() {
     const mapOrder = (order: any): Pedido => {
         // Usamos las claves crudas del backend, el mapeo se hace en la UI con la config del negocio
         const now = new Date();
-        const dueDate = new Date(order.dueDate);
+        const dueDate = order.dueDate ? new Date(order.dueDate) : null;
         const isCompleted = order.status === 'DONE' || order.status === 'DELIVERED';
-        const isOverdue = dueDate < now && !isCompleted;
+        const isOverdue = dueDate && dueDate < now && !isCompleted;
 
         return {
             id: order.id,
@@ -54,9 +54,10 @@ export default function OrderDetailPage() {
             numero: order.code || order.id.slice(0, 8),
             clienteId: order.customerId || '',
             clientName: order.clientName || '',
-            clientPhone: order.clientPhone || '',
+            clientPhone: order.customer?.phone || order.clientPhone || '',
             fechaCreacion: order.createdAt,
             fechaEntrega: order.dueDate,
+            fechaActualizacion: order.updatedAt || order.createdAt,
             estado: order.status || 'PENDING',
             observaciones: order.notes || '',
             total: Number(order.totalPrice) || 0,
@@ -64,7 +65,7 @@ export default function OrderDetailPage() {
             profit: order.profit || 0,
             totalSenias: 0,
             saldo: Number(order.totalPrice) || 0,
-            urgencia: isOverdue ? 'VENCIDO' : 'EN TIEMPO',
+            urgencia: isCompleted ? 'LISTO' : (isOverdue ? 'VENCIDO' : 'EN TIEMPO'),
             responsableGeneral: order.responsableGeneral,
             jobs: order.jobs?.map((job: any) => ({
                 id: job.id,
@@ -73,6 +74,21 @@ export default function OrderDetailPage() {
                 responsable: job.responsable,
                 notes: job.notes,
                 sortRank: job.sortRank
+            })) || [],
+            statusHistory: order.statusHistory?.map((h: any) => ({
+                id: h.id,
+                changedAt: h.changedAt,
+                fromStatus: h.fromStatus,
+                toStatus: h.toStatus,
+                note: h.note,
+                performedBy: h.performedBy
+            })) || [],
+            failures: order.failures?.map((f: any) => ({
+                id: f.id,
+                reason: f.reason,
+                wastedGrams: f.wastedGrams,
+                material: f.material,
+                createdAt: f.createdAt
             })) || [],
             items: order.items?.map((item: any) => ({
                 id: item.id,
@@ -83,41 +99,65 @@ export default function OrderDetailPage() {
                 quantityProduced: item.doneQty || 0,
                 precioUnitario: Number(item.price) || 0,
                 senia: Number(item.deposit) || 0,
-                url_stl: item.stlUrl,
-                peso_gramos: item.weightGrams,
-                duracion_estimada_minutos: item.estimatedMinutes,
-                demora_estimada_minutos: item.estimatedMinutes,
+                urlStl: item.stlUrl,
+                pesoGramos: item.weightGrams,
+                duracionEstimadaMinutos: item.estimatedMinutes,
+                demoraEstimadaMinutos: item.estimatedMinutes,
                 metadata: item.metadata || {},
-                ...item.metadata // Incluímos los campos dinámicos para compatibilidad con campos de config
+                ...item.metadata
             })) || []
         }
     }
 
-    useEffect(() => {
-        const businessOrders = pedidos[negocioActivoId] || []
-        const foundOrder = businessOrders.find(o => o.id === id)
+    const [isEditing, setIsEditing] = useState(false)
 
-        if (foundOrder) {
-            setOrder(foundOrder)
-            setItems([...foundOrder.items])
-            setIsLoading(false)
-        } else if (id && typeof id === 'string') {
-            const fetchOrder = async () => {
-                try {
-                    const data: any = await api.orders.getOne(id)
-                    const mapped = mapOrder(data)
-                    setOrder(mapped)
-                    setItems([...mapped.items])
-                } catch (error) {
-                    console.error('Error fetching order detail:', error)
-                    toast.error('No se pudo cargar el pedido')
-                } finally {
-                    setIsLoading(false)
-                }
+    const fetchOrder = useCallback(async () => {
+        if (id && typeof id === 'string') {
+            setIsLoading(true)
+            try {
+                const data: any = await api.orders.getOne(id)
+                const mapped = mapOrder(data)
+                setOrder(mapped)
+                setItems([...mapped.items])
+            } catch (error) {
+                console.error('Error fetching order detail:', error)
+                toast.error('No se pudo cargar el pedido')
+            } finally {
+                setIsLoading(false)
             }
-            fetchOrder()
         }
-    }, [id, negocioActivoId, pedidos])
+    }, [id])
+
+    useEffect(() => {
+        fetchOrder()
+    }, [fetchOrder])
+
+    const handleSaveChanges = async () => {
+        if (!order) return
+        setIsSaving(true)
+        try {
+            await updatePedido(order.negocioId, order.id, {
+                items: items,
+                responsableGeneralId: order.responsableGeneral?.id
+            } as any)
+            await fetchOrder()
+            setIsEditing(false)
+            toast.success('Pedido guardado con éxito')
+        } catch (error) {
+            console.error('Error saving order:', error)
+            toast.error('Error al guardar cambios')
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
+    const handleStatusUpdateClick = () => {
+        if (!isEditing) {
+            toast.error('Habilita la edición para cambiar el estado o responsable')
+            return
+        }
+        setIsStatusModalOpen(true)
+    }
 
     if (isLoading) return <div className="p-8 text-center text-zinc-500">Cargando detalles del pedido...</div>
     if (!order) return <div className="p-8 text-center text-zinc-500">Pedido no encontrado.</div>
@@ -140,6 +180,23 @@ export default function OrderDetailPage() {
         }
     }
 
+    const handleCancelOrder = async () => {
+        if (!order) return
+        if (!confirm('¿Está seguro de que desea ANULAR este pedido? Esta acción no se puede deshacer.')) return
+
+        setIsSaving(true)
+        try {
+            await api.orders.updateStatus(order.id, 'CANCELLED' as any)
+            toast.success('Pedido anulado correctamente')
+            await fetchOrder()
+        } catch (error) {
+            console.error('Error cancelling order:', error)
+            toast.error('No se pudo anular el pedido')
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
     const handleAddStage = async (title: string) => {
         if (!order) return
         try {
@@ -157,25 +214,6 @@ export default function OrderDetailPage() {
     }
 
 
-
-    const handleStatusUpdateClick = () => {
-        setIsStatusModalOpen(true)
-    }
-
-    const handleSaveChanges = async () => {
-        if (!order) return
-        setIsSaving(true)
-        try {
-            await updatePedido(negocioActivoId, order.id, {
-                responsableGeneral: order.responsableGeneral,
-                observaciones: order.observaciones,
-                // Si items cambiaron, aquí podrías persistir también si el backend lo soporta
-            } as any)
-            toast.success('Cambios guardados')
-        } finally {
-            setIsSaving(false)
-        }
-    }
 
     const effectiveRubro = order?.negocioId === negocioActivoId
         ? (negocioActivo?.rubro || 'GENERICO')
@@ -227,17 +265,35 @@ export default function OrderDetailPage() {
                         className="bg-green-50/50 hover:bg-green-100 dark:bg-green-900/10 dark:hover:bg-green-900/20 text-green-700 dark:text-green-500 border border-green-200 dark:border-green-900 flex-1 sm:flex-none"
                     />
                     <Button
+                        variant={isEditing ? "default" : "outline"}
+                        size="sm"
+                        className={cn(
+                            "flex-1 sm:flex-none h-11 px-6 rounded-2xl font-black uppercase tracking-widest text-[11px] gap-2",
+                            isEditing && "bg-amber-500 hover:bg-amber-600 text-white border-none shadow-lg shadow-amber-500/20"
+                        )}
+                        onClick={() => setIsEditing(!isEditing)}
+                    >
+                        {isEditing ? <X className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
+                        {isEditing ? 'Cancelar Edición' : 'Editar Datos'}
+                    </Button>
+                    <Button
                         size="sm"
                         className="flex-1 sm:flex-none h-11 px-6 rounded-2xl font-black uppercase tracking-widest text-[11px] gap-2 shadow-xl shadow-primary/10"
                         onClick={handleSaveChanges}
-                        disabled={isSaving}
+                        disabled={isSaving || !isEditing}
                     >
                         {isSaving ? <span className="animate-spin mr-2">⏳</span> : <Save className="h-4 w-4" />}
                         {isSaving ? 'Guardando...' : 'Guardar Cambios'}
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1 sm:flex-none h-11 px-6 rounded-2xl font-black uppercase tracking-widest text-[11px] gap-2">
-                        <Printer className="h-4 w-4" /> Imprimir
-                    </Button>
+                    <Link href={order.type === 'STOCK' ? `/stock/nuevo?cloneId=${order.id}` : `/pedidos/nuevo?cloneId=${order.id}`}>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 sm:flex-none h-11 px-6 rounded-2xl font-black uppercase tracking-widest text-[11px] gap-2 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
+                        >
+                            <Copy className="h-4 w-4" /> Clonar
+                        </Button>
+                    </Link>
                 </div>
             </div>
 
@@ -268,11 +324,12 @@ export default function OrderDetailPage() {
                                                     <Input
                                                         type="number"
                                                         value={item.cantidad || ''}
+                                                        disabled={!isEditing}
                                                         onChange={e => {
                                                             const val = Number(e.target.value)
                                                             setItems(prev => prev.map(i => i.id === item.id ? { ...i, cantidad: val } : i))
                                                         }}
-                                                        className="h-11 rounded-xl bg-white focus:bg-white dark:bg-zinc-950 dark:focus:bg-zinc-950 transition-all font-bold"
+                                                        className="h-11 rounded-xl bg-white focus:bg-white dark:bg-zinc-950 dark:focus:bg-zinc-950 transition-all font-bold disabled:opacity-70"
                                                     />
                                                 </div>
                                                 <div className="space-y-3">
@@ -280,11 +337,12 @@ export default function OrderDetailPage() {
                                                     <Input
                                                         type="number"
                                                         value={item.precioUnitario || ''}
+                                                        disabled={!isEditing}
                                                         onChange={e => {
                                                             const val = Number(e.target.value)
                                                             setItems(prev => prev.map(i => i.id === item.id ? { ...i, precioUnitario: val } : i))
                                                         }}
-                                                        className="h-11 rounded-xl bg-white focus:bg-white dark:bg-zinc-950 dark:focus:bg-zinc-950 transition-all font-bold"
+                                                        className="h-11 rounded-xl bg-white focus:bg-white dark:bg-zinc-950 dark:focus:bg-zinc-950 transition-all font-bold disabled:opacity-70"
                                                     />
                                                 </div>
                                                 <div className="space-y-3">
@@ -292,11 +350,12 @@ export default function OrderDetailPage() {
                                                     <Input
                                                         type="number"
                                                         value={item.senia || ''}
+                                                        disabled={!isEditing}
                                                         onChange={e => {
                                                             const val = Number(e.target.value)
                                                             setItems(prev => prev.map(i => i.id === item.id ? { ...i, senia: val } : i))
                                                         }}
-                                                        className="h-11 rounded-xl bg-white focus:bg-white dark:bg-zinc-950 dark:focus:bg-zinc-950 transition-all font-bold"
+                                                        className="h-11 rounded-xl bg-white focus:bg-white dark:bg-zinc-950 dark:focus:bg-zinc-950 transition-all font-bold disabled:opacity-70"
                                                     />
                                                 </div>
                                                 <div className="space-y-3">
@@ -328,8 +387,9 @@ export default function OrderDetailPage() {
 
                                                                         {f.tipo === 'textarea' ? (
                                                                             <textarea
-                                                                                className="flex min-h-[100px] w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-zinc-900/5 dark:border-zinc-800 dark:bg-zinc-950/50 focus:bg-white dark:focus:bg-zinc-900 transition-all"
+                                                                                className="flex min-h-[100px] w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-zinc-900/5 dark:border-zinc-800 dark:bg-zinc-950/50 focus:bg-white dark:focus:bg-zinc-900 transition-all disabled:opacity-70"
                                                                                 value={value || ''}
+                                                                                disabled={!isEditing}
                                                                                 onChange={e => {
                                                                                     setItems(prev => prev.map(i => i.id === item.id ? { ...i, [f.key]: e.target.value } : i))
                                                                                 }}
@@ -337,6 +397,7 @@ export default function OrderDetailPage() {
                                                                         ) : f.tipo === 'boolean' ? (
                                                                             <button
                                                                                 type="button"
+                                                                                disabled={!isEditing}
                                                                                 onClick={() => {
                                                                                     setItems(prev => prev.map(i => i.id === item.id ? { ...i, [f.key]: !value } : i))
                                                                                 }}
@@ -344,7 +405,8 @@ export default function OrderDetailPage() {
                                                                                     "flex items-center gap-3 h-11 w-full rounded-xl border px-4 transition-all duration-200",
                                                                                     value
                                                                                         ? "bg-zinc-900 border-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-lg shadow-zinc-900/10"
-                                                                                        : "bg-white border-zinc-200 text-zinc-400 dark:bg-zinc-950/20 dark:border-zinc-800"
+                                                                                        : "bg-white border-zinc-200 text-zinc-400 dark:bg-zinc-950/20 dark:border-zinc-800",
+                                                                                    !isEditing && "opacity-70 cursor-not-allowed"
                                                                                 )}
                                                                             >
                                                                                 <div className={cn(
@@ -362,8 +424,9 @@ export default function OrderDetailPage() {
                                                                             </button>
                                                                         ) : f.tipo === 'select' ? (
                                                                             <select
-                                                                                className="flex h-11 w-full rounded-xl border border-zinc-200 bg-white dark:bg-zinc-900 px-4 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-zinc-900/5 dark:border-zinc-800 transition-all cursor-pointer"
+                                                                                className="flex h-11 w-full rounded-xl border border-zinc-200 bg-white dark:bg-zinc-900 px-4 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-zinc-900/5 dark:border-zinc-800 transition-all cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
                                                                                 value={value || ''}
+                                                                                disabled={!isEditing}
                                                                                 onChange={e => {
                                                                                     setItems(prev => prev.map(i => i.id === item.id ? { ...i, [f.key]: e.target.value } : i))
                                                                                 }}
@@ -377,11 +440,12 @@ export default function OrderDetailPage() {
                                                                             <Input
                                                                                 type={f.tipo}
                                                                                 value={value || ''}
+                                                                                disabled={!isEditing}
                                                                                 onChange={e => {
                                                                                     const val = f.tipo === 'number' ? Number(e.target.value) : e.target.value
                                                                                     setItems(prev => prev.map(i => i.id === item.id ? { ...i, [f.key]: val } : i))
                                                                                 }}
-                                                                                className="h-11 rounded-xl bg-zinc-50/50 focus:bg-white dark:focus:bg-zinc-900 dark:bg-zinc-950/50 transition-all font-bold"
+                                                                                className="h-11 rounded-xl bg-zinc-50/50 focus:bg-white dark:focus:bg-zinc-900 dark:bg-zinc-950/50 transition-all font-bold disabled:opacity-70"
                                                                             />
                                                                         )}
                                                                     </div>
@@ -426,6 +490,96 @@ export default function OrderDetailPage() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* HISTORIAL Y FILAMENTO (Trazabilidad) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                        <Card className="shadow-sm border-zinc-200 dark:border-zinc-800 rounded-[2.5rem] overflow-hidden">
+                            <CardHeader className="p-8 border-b border-zinc-50 dark:border-zinc-900 bg-zinc-50/10">
+                                <CardTitle className="text-sm font-black uppercase tracking-widest text-zinc-500">Historial de Estados</CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-6">
+                                <div className="space-y-6">
+                                    {order.statusHistory?.length ? (
+                                        order.statusHistory.sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime()).map((h, i) => (
+                                            <div key={h.id} className="relative pl-6 pb-6 last:pb-0 border-l border-zinc-100 dark:border-zinc-800 ml-2">
+                                                <div className="absolute left-[-5px] top-0 h-2 w-2 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[10px] font-black uppercase text-zinc-400">
+                                                            {new Date(h.changedAt).toLocaleString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                        <Badge className={cn("text-[9px] font-black uppercase border shadow-none", getStatusStyles(h.toStatus))}>
+                                                            {getStatusLabel(h.toStatus)}
+                                                        </Badge>
+                                                    </div>
+                                                    {h.note && <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400 italic">"{h.note}"</p>}
+                                                    {h.performedBy && <p className="text-[9px] font-bold text-zinc-400 uppercase">Por: {h.performedBy.firstName}</p>}
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="p-4 text-center text-xs font-bold text-zinc-400 uppercase tracking-widest">Sin registros aún</p>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="shadow-sm border-zinc-200 dark:border-zinc-800 rounded-[2.5rem] overflow-hidden">
+                            <CardHeader className="p-8 border-b border-zinc-50 dark:border-zinc-900 bg-zinc-50/10">
+                                <div className="flex items-center justify-between">
+                                    <CardTitle className="text-sm font-black uppercase tracking-widest text-zinc-500">Consumo de Material</CardTitle>
+                                    <div className="flex gap-2">
+                                        <div className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-full border border-zinc-200 dark:border-zinc-700">
+                                            <span className="text-[10px] font-black text-zinc-500 tabular-nums">
+                                                Teórico: {order.items?.reduce((acc, item) => acc + ((item.pesoGramos || 0) * (item.cantidad || 0)), 0).toFixed(1)}g
+                                            </span>
+                                        </div>
+                                        <div className="px-3 py-1 bg-rose-50 dark:bg-rose-950/20 rounded-full border border-rose-100 dark:border-rose-900/50">
+                                            <span className="text-[10px] font-black text-rose-600 tabular-nums">
+                                                Fallo: {order.failures?.reduce((acc, f) => acc + (f.wastedGrams || 0), 0).toFixed(1)}g
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-6">
+                                <div className="space-y-4">
+                                    <div className="p-5 bg-zinc-900 dark:bg-white rounded-3xl flex justify-between items-center mb-6">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 ml-1">Total Acumulado</span>
+                                        <span className="text-xl font-black text-white dark:text-zinc-900 tabular-nums">
+                                            {(
+                                                (order.items?.reduce((acc, item) => acc + ((item.pesoGramos || 0) * (item.cantidad || 0)), 0) || 0) +
+                                                (order.failures?.reduce((acc, f) => acc + (f.wastedGrams || 0), 0) || 0)
+                                            ).toFixed(1)}g
+                                        </span>
+                                    </div>
+
+                                    {order.failures?.length ? (
+                                        order.failures.map((f) => (
+                                            <div key={f.id} className="p-4 rounded-2xl bg-rose-50/30 dark:bg-rose-950/10 border border-rose-100/50 dark:border-rose-900/20 flex justify-between items-start gap-3">
+                                                <div className="space-y-1">
+                                                    <p className="text-xs font-black text-zinc-900 dark:text-zinc-50">{f.reason}</p>
+                                                    <p className="text-[9px] font-bold text-rose-500/80 uppercase tracking-wide">
+                                                        {f.material?.name || 'Material Genérico'} • {f.material?.type || ''}
+                                                    </p>
+                                                </div>
+                                                <div className="flex flex-col items-end">
+                                                    <span className="text-sm font-black text-rose-600 tabular-nums">-{f.wastedGrams}g</span>
+                                                    <span className="text-[8px] font-black text-zinc-400 uppercase">
+                                                        {new Date(f.createdAt).toLocaleDateString('es-AR')}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="py-8 text-center bg-zinc-50/50 dark:bg-zinc-900/20 rounded-[2rem] border-2 border-dashed border-zinc-100 dark:border-zinc-800">
+                                            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest leading-loose">No se registraron fallos<br />de material</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
 
                     {/* FLUJO DE TRABAJO (Workflow) */}
                     {(effectiveRubro === 'METALURGICA' || effectiveRubro === 'CARPINTERIA') && (
@@ -609,9 +763,16 @@ export default function OrderDetailPage() {
                             </CardContent>
                         </Card>
 
-                        <Button variant="ghost" className="w-full gap-3 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all py-8 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] group">
-                            <Trash2 className="h-5 w-5 transition-transform group-hover:scale-110" />
-                            <span className="text-xs font-black uppercase tracking-[0.15em]">Anular Pedido</span>
+                        <Button
+                            variant="ghost"
+                            className="w-full gap-3 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all py-8 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-[1.5rem] group"
+                            onClick={handleCancelOrder}
+                            disabled={isSaving || order.estado === 'CANCELLED'}
+                        >
+                            <Trash2 className={cn("h-5 w-5 transition-transform group-hover:scale-110", order.estado === 'CANCELLED' && "text-rose-500")} />
+                            <span className="text-xs font-black uppercase tracking-[0.15em]">
+                                {order.estado === 'CANCELLED' ? 'Pedido Anulado' : 'Anular Pedido'}
+                            </span>
                         </Button>
                     </div>
                 </div>
@@ -619,7 +780,10 @@ export default function OrderDetailPage() {
             <OrderStatusModal
                 order={order}
                 isOpen={isStatusModalOpen}
-                onClose={() => setIsStatusModalOpen(false)}
+                onClose={async () => {
+                    setIsStatusModalOpen(false)
+                    await fetchOrder()
+                }}
                 employees={employees}
             />
         </div>

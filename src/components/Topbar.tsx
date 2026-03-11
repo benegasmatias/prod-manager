@@ -63,7 +63,8 @@ export function Topbar() {
         setActivo,
         addNegocio,
         updateNegocio,
-        removeNegocio
+        removeNegocio,
+        user
     } = useNegocio()
     const { theme, setTheme, resolvedTheme } = useTheme()
 
@@ -73,27 +74,15 @@ export function Topbar() {
     const [formNombre, setFormNombre] = useState('')
     const [formRubro, setFormRubro] = useState<Rubro>('GENERICO')
 
-    const [userProfile, setUserProfile] = useState<any>(null)
     const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false)
     const [profileName, setProfileName] = useState('')
     const [savingProfile, setSavingProfile] = useState(false)
 
     useEffect(() => {
-        async function loadProfile() {
-            const supabase = createClient()
-            const { data: { session } } = await supabase.auth.getSession()
-            if (session?.access_token) {
-                try {
-                    const profile: any = await api.users.getMe(session.access_token)
-                    setUserProfile(profile)
-                    setProfileName(profile.fullName || '')
-                } catch (err) {
-                    console.error('Error loading profile:', err)
-                }
-            }
+        if (user) {
+            setProfileName(user.fullName || '')
         }
-        loadProfile()
-    }, [])
+    }, [user])
 
     const handleUpdateProfile = async () => {
         const supabase = createClient()
@@ -102,10 +91,9 @@ export function Topbar() {
 
         setSavingProfile(true)
         try {
-            const updated = await api.users.updateProfile(session.access_token, { fullName: profileName })
-            setUserProfile(updated)
-            toast.success('Perfil actualizado')
-            setIsProfileDialogOpen(false)
+            await api.users.updateProfile(session.access_token, { fullName: profileName })
+            toast.success('Perfil actualizado. Recargando...')
+            window.location.reload() // Recargamos para que NegocioContext traiga lo nuevo
         } catch (err) {
             toast.error('Error al actualizar perfil')
         } finally {
@@ -267,7 +255,7 @@ export function Topbar() {
                             </div>
                             <div className="hidden sm:flex flex-col items-start leading-none gap-1">
                                 <span className="text-sm font-black tracking-tight group-hover:text-primary transition-colors truncate max-w-[120px]">
-                                    {userProfile ? (userProfile.fullName || userProfile.email?.split('@')[0]) : 'Cargando...'}
+                                    {user ? (user.fullName || user.email?.split('@')[0]) : 'Cargando...'}
                                 </span>
                                 <span className="text-[10px] font-bold text-primary/60 uppercase tracking-widest leading-none">Admin</span>
                             </div>
@@ -278,7 +266,7 @@ export function Topbar() {
                         <div className="bg-primary/5 p-4 mb-2 rounded-xl border border-primary/10">
                             <div className="flex flex-col gap-1">
                                 <span className="text-xs font-black uppercase tracking-tight text-primary">Mi Perfil</span>
-                                <span className="text-[10px] font-bold text-zinc-500 truncate">{userProfile?.email}</span>
+                                <span className="text-[10px] font-bold text-zinc-500 truncate">{user?.email}</span>
                             </div>
                         </div>
                         <div className="space-y-1">
@@ -314,7 +302,7 @@ export function Topbar() {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-1">Correo Electrónico</label>
                                 <Input
-                                    value={userProfile?.email || ''}
+                                    value={user?.email || ''}
                                     disabled
                                     className="h-12 border-zinc-100 dark:border-zinc-900 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl font-bold opacity-70"
                                 />

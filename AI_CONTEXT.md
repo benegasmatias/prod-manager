@@ -154,6 +154,7 @@ Validar siempre en DevTools / Network que:
 - cada endpoint se invoque solo la cantidad esperada
 - no existan refetch automáticos innecesarios
 - no haya renders encadenados por estados mal definidos
+- OBLIGATORIO: Usar `prefetch={false}` en TODOS los componentes `<Link>` que apunten a rutas dinámicas (ej: `/pedidos/[id]`) o módulos pesados desde el Dashboard, para evitar inundar el Network con peticiones `_rsc` innecesarias al cargar la página principal.
 
 No aplicar parches superficiales.
 Encontrar y corregir siempre la causa raíz.

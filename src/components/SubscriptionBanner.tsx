@@ -36,6 +36,7 @@ export function SubscriptionBanner() {
 
             <Link
                 href="/ajustes"
+                prefetch={false}
                 className="px-6 py-2 bg-white text-rose-600 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-zinc-100 transition-all shadow-lg"
             >
                 <CreditCard className="h-3 w-3" />

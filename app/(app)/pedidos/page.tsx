@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Plus, LayoutGrid, List, Search, Calendar, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown } from 'lucide-react'
 import { cn } from '@/src/lib/utils'
 import Link from 'next/link'
@@ -35,40 +35,44 @@ export default function OrdersPage() {
         }
     }, [negocioActivoId])
 
-    const orders = pedidos[negocioActivoId] || []
-    const misClientes = clientes[negocioActivoId] || []
+    const orders = useMemo(() => (pedidos[negocioActivoId] || []).filter(o =>
+        o.type !== 'STOCK' &&
+        o.clientName?.trim().toUpperCase() !== 'STOCK'
+    ), [pedidos, negocioActivoId])
 
-    const filteredOrders = orders.filter(order => {
+    const misClientes = useMemo(() => clientes[negocioActivoId] || [], [clientes, negocioActivoId])
+
+    const filteredOrders = useMemo(() => orders.filter(order => {
         const matchEstado = estadoFilter === 'all' || order.estado === estadoFilter
         const matchUrgencia = urgenciaFilter === 'all' || order.urgencia === urgenciaFilter
 
         const searchLower = searchTerm.toLowerCase()
         const matchSearch = searchTerm === '' ||
-            order.numero.toLowerCase().includes(searchLower) ||
-            order.clientName.toLowerCase().includes(searchLower) ||
-            order.responsableGeneral?.firstName?.toLowerCase().includes(searchLower) ||
-            order.responsableGeneral?.lastName?.toLowerCase().includes(searchLower)
+            String(order.numero).toLowerCase().includes(searchLower) ||
+            String(order.clientName).toLowerCase().includes(searchLower) ||
+            String(order.responsableGeneral?.firstName).toLowerCase().includes(searchLower) ||
+            String(order.responsableGeneral?.lastName).toLowerCase().includes(searchLower)
 
-        const orderDate = new Date(order.fechaEntrega)
-        const matchDesde = !dateDesde || orderDate >= new Date(dateDesde)
-        const matchHasta = !dateHasta || orderDate <= new Date(dateHasta + 'T23:59:59')
+        const orderDate = order.fechaEntrega ? new Date(order.fechaEntrega) : null
+        const matchDesde = !dateDesde || (orderDate && orderDate >= new Date(dateDesde))
+        const matchHasta = !dateHasta || (orderDate && orderDate <= new Date(dateHasta + 'T23:59:59'))
 
         return matchEstado && matchUrgencia && matchSearch && matchDesde && matchHasta
-    })
+    }), [orders, estadoFilter, urgenciaFilter, searchTerm, dateDesde, dateHasta])
 
-    const sortedOrders = [...filteredOrders].sort((a, b) => {
+    const sortedOrders = useMemo(() => [...filteredOrders].sort((a, b) => {
         let valA: any = a[sortKey as keyof typeof a]
         let valB: any = b[sortKey as keyof typeof b]
 
         if (sortKey === 'fechaEntrega' || sortKey === 'fechaActualizacion') {
-            valA = new Date(a[sortKey as 'fechaEntrega' | 'fechaActualizacion']).getTime()
-            valB = new Date(b[sortKey as 'fechaEntrega' | 'fechaActualizacion']).getTime()
+            valA = new Date(a[sortKey as 'fechaEntrega' | 'fechaActualizacion'] || 0).getTime()
+            valB = new Date(b[sortKey as 'fechaEntrega' | 'fechaActualizacion'] || 0).getTime()
         }
 
         if (valA < valB) return sortDir === 'asc' ? -1 : 1
         if (valA > valB) return sortDir === 'asc' ? 1 : -1
         return 0
-    })
+    }), [filteredOrders, sortKey, sortDir])
 
     const handleSort = (key: string) => {
         if (sortKey === key) {
@@ -79,13 +83,13 @@ export default function OrdersPage() {
         }
     }
 
-    const getClientName = (id: string) => {
+    const getClientName = useCallback((id: string) => {
         const c = misClientes.find(cli => cli.id === id)
         return c ? c.nombre : 'Cliente Desconocido'
-    }
+    }, [misClientes])
 
-    const activeOrders = sortedOrders.filter(o => o.estado !== 'DELIVERED')
-    const deliveredOrders = sortedOrders.filter(o => o.estado === 'DELIVERED')
+    const activeOrders = useMemo(() => sortedOrders.filter(o => o.estado !== 'DELIVERED'), [sortedOrders])
+    const deliveredOrders = useMemo(() => sortedOrders.filter(o => o.estado === 'DELIVERED'), [sortedOrders])
 
     return (
         <div className="space-y-8 pb-10">
@@ -117,11 +121,11 @@ export default function OrdersPage() {
                             <LayoutGrid className="h-4 w-4" />
                         </Link>
                     </div>
-                    <Link href="/pedidos/nuevo">
-                        <Button className="h-11 px-6 rounded-2xl font-black uppercase tracking-widest text-[11px] gap-2 shadow-xl shadow-primary/20">
+                    <Button asChild className="h-11 px-6 rounded-2xl font-black uppercase tracking-widest text-[11px] gap-2 shadow-xl shadow-primary/20">
+                        <Link href="/pedidos/nuevo">
                             <Plus className="h-4 w-4" /> Registrar Pedido
-                        </Button>
-                    </Link>
+                        </Link>
+                    </Button>
                 </div>
             </div>
 
@@ -210,6 +214,8 @@ export default function OrdersPage() {
                         sortDir={sortDir}
                         onSort={handleSort}
                         employees={employees}
+                        hideTypeColumn={true}
+                        clientLabel="Cliente"
                     />
                 ) : (
                     <div className="p-12 text-center rounded-[2rem] border-2 border-dashed border-zinc-100 dark:border-zinc-800">
@@ -233,6 +239,8 @@ export default function OrdersPage() {
                         sortDir={sortDir}
                         onSort={handleSort}
                         employees={employees}
+                        hideTypeColumn={true}
+                        clientLabel="Cliente"
                     />
                 </div>
             )}

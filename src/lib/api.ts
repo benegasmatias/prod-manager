@@ -5,51 +5,69 @@ const supabase = createClient()
 
 let isRedirectingToLogin = false;
 
+const PENDING_API_REQUESTS = new Map<string, Promise<any>>();
+
 export async function fetchApi<T>(path: string, options: RequestInit = {}): Promise<T> {
     const url = `${API_URL}${path.startsWith('/') ? path : `/${path}`}`;
 
-    // 1. Intentar obtener token de la sesión de Supabase (más confiable que localStorage manual)
-    const { data: { session } } = await supabase.auth.getSession();
-    let token: string | null | undefined = session?.access_token;
+    // Solo deduplicar métodos GET para evitar problemas con POST/PATCH/DELETE
+    const isGet = !options.method || options.method.toUpperCase() === 'GET';
+    const cacheKey = `${url}-${JSON.stringify(options.headers || {})}`;
 
-    // 2. Fallback a localStorage por compatibilidad
-    if (!token && typeof window !== 'undefined') {
-        token = localStorage.getItem('prodmanager_token');
+    if (isGet && PENDING_API_REQUESTS.has(cacheKey)) {
+        return PENDING_API_REQUESTS.get(cacheKey);
     }
 
-    const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        ...(options.headers as Record<string, string>),
+    const executeRequest = async () => {
+        // 1. Intentar obtener token de la sesión de Supabase
+        const { data: { session } } = await supabase.auth.getSession();
+        let token: string | null | undefined = session?.access_token;
+
+        // 2. Fallback a localStorage por compatibilidad
+        if (!token && typeof window !== 'undefined') {
+            token = localStorage.getItem('prodmanager_token');
+        }
+
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            ...(options.headers as Record<string, string>),
+        };
+
+        const response = await fetch(url, {
+            ...options,
+            headers,
+        });
+
+        if (response.status === 401) {
+            if (typeof window !== 'undefined' && !isRedirectingToLogin) {
+                const currentPath = window.location.pathname;
+                if (currentPath !== '/login' && currentPath !== '/register') {
+                    isRedirectingToLogin = true;
+                    console.warn('[fetchApi] 401 Unauthorized -> redirect to /login');
+                    const fullPath = currentPath + window.location.search;
+                    window.location.href = `/login?next=${encodeURIComponent(fullPath)}`;
+                }
+            }
+            throw new Error('Sesión expirada. Redirigiendo...');
+        }
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `API Error: ${response.status} ${response.statusText}`);
+        }
+
+        const responseText = await response.text();
+        return responseText ? JSON.parse(responseText) : {} as T;
     };
 
-    const response = await fetch(url, {
-        ...options,
-        headers,
-    });
-
-    if (response.status === 401) {
-        if (typeof window !== 'undefined' && !isRedirectingToLogin) {
-            const currentPath = window.location.pathname;
-
-            // Evitar loop si ya estamos en login o registración
-            if (currentPath !== '/login' && currentPath !== '/register') {
-                isRedirectingToLogin = true;
-                console.warn('[fetchApi] 401 Unauthorized -> redirect to /login');
-                const fullPath = currentPath + window.location.search;
-                window.location.href = `/login?next=${encodeURIComponent(fullPath)}`;
-            }
-        }
-        throw new Error('Sesión expirada. Redirigiendo...');
+    if (isGet) {
+        const promise = executeRequest().finally(() => PENDING_API_REQUESTS.delete(cacheKey));
+        PENDING_API_REQUESTS.set(cacheKey, promise);
+        return promise;
     }
 
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `API Error: ${response.status} ${response.statusText}`);
-    }
-
-    const responseText = await response.text();
-    return responseText ? JSON.parse(responseText) : {} as T;
+    return executeRequest();
 }
 
 export const api = {
@@ -68,13 +86,17 @@ export const api = {
             method: 'POST',
             body: JSON.stringify(data),
         }),
-        updateStatus: (id: string, status: string, notes?: string, responsableGeneralId?: string) => fetchApi(`/orders/${id}/status`, {
+        updateStatus: (id: string, data: { status?: string, type?: string, clientName?: string, totalPrice?: number, dueDate?: string, notes?: string, responsableGeneralId?: string }) => fetchApi(`/orders/${id}/status`, {
             method: 'PATCH',
-            body: JSON.stringify({ status, notes, responsableGeneralId }),
+            body: JSON.stringify(data),
         }),
-        reportFailure: (id: string, reason: string, wastedGrams: number, moveToReprint: boolean, materialId?: string, metadata?: any) => fetchApi(`/orders/${id}/fail`, {
+        reportFailure: (id: string, reason: string, wastedGrams: number, moveToReprint: boolean, materialId?: string, metadata?: any, targetStatus?: string) => fetchApi(`/orders/${id}/fail`, {
             method: 'POST',
-            body: JSON.stringify({ reason, wastedGrams, moveToReprint, materialId, metadata }),
+            body: JSON.stringify({ reason, wastedGrams, moveToReprint, materialId, metadata, targetStatus }),
+        }),
+        addPayment: (id: string, data: { amount: number, method: string, reference?: string }) => fetchApi(`/orders/${id}/payments`, {
+            method: 'POST',
+            body: JSON.stringify(data),
         }),
     },
     jobs: {
@@ -215,7 +237,6 @@ export const api = {
     },
     notifications: {
         getAll: (businessId?: string) => fetchApi(`/notifications${businessId ? `?businessId=${businessId}` : ''}`),
-        getUnreadCount: (businessId?: string) => fetchApi<{ count: number }>(`/notifications/unread-count${businessId ? `?businessId=${businessId}` : ''}`),
         markAsRead: (id: string) => fetchApi(`/notifications/${id}/read`, {
             method: 'PATCH'
         }),

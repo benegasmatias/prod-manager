@@ -112,7 +112,7 @@ export default function DashboardPage() {
         fetchSummary()
     }, [negocioActivoId])
 
-    const recentOrders = summary?.recentOrders || []
+    const recentOrders = (summary?.recentOrders || []).filter(o => o.clientName !== 'STOCK')
     const alerts = summary?.alerts || []
 
     return (
@@ -151,7 +151,7 @@ export default function DashboardPage() {
                 <Card className="lg:col-span-2 border-zinc-200/60 dark:border-zinc-800/50 shadow-sm overflow-hidden rounded-2xl">
                     <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/30 dark:bg-zinc-900/10 px-6 py-4">
                         <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">Últimos Movimientos</CardTitle>
-                        <Link href="/pedidos">
+                        <Link href="/pedidos" prefetch={false}>
                             <Button variant="ghost" size="sm" className="text-xs font-bold text-primary gap-1">
                                 Ver todo <ChevronRight className="h-3 w-3" />
                             </Button>
@@ -178,7 +178,7 @@ export default function DashboardPage() {
                                     const colorClass = getStatusStyles(order.status);
 
                                     return (
-                                        <Link key={order.id} href={`/pedidos/${order.id}`} className="group block p-5 transition-all hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
+                                        <Link key={order.id} href={`/pedidos/${order.id}`} prefetch={false} className="group block p-5 transition-all hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
                                             <div className="flex items-center justify-between gap-4">
                                                 <div className="flex items-center gap-4 overflow-hidden">
                                                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-100 bg-white group-hover:border-primary/20 group-hover:bg-primary/5 dark:border-zinc-800 dark:bg-zinc-950 transition-colors">
@@ -278,7 +278,7 @@ export default function DashboardPage() {
                                 <h4 className="text-lg font-black tracking-tight uppercase leading-tight">Impulsa tu <br /> producción</h4>
                                 <p className="text-xs font-medium text-white/70 mt-2">Explora los reportes avanzados para encontrar cuellos de botella.</p>
                             </div>
-                            <Link href="/reportes">
+                            <Link href="/reportes" prefetch={false}>
                                 <Button variant="secondary" size="sm" className="w-full font-black uppercase tracking-tight text-xs h-9">
                                     Reportes <BarChart3 className="ml-2 h-3 w-3" />
                                 </Button>

@@ -43,6 +43,7 @@ export default function MaterialsPage() {
     const [formRemainingWeight, setFormRemainingWeight] = useState(1000)
     const [formBedTemp, setFormBedTemp] = useState<number | ''>('')
     const [formNozzleTemp, setFormNozzleTemp] = useState<number | ''>('')
+    const [formCostPerKg, setFormCostPerKg] = useState<number>(0)
 
     const loadMaterials = async () => {
         if (!negocioActivoId) return
@@ -77,6 +78,7 @@ export default function MaterialsPage() {
                 totalWeightGrams: formWeight,
                 remainingWeightGrams: formRemainingWeight,
                 unit: formUnit, // Guardamos la unidad
+                costPerKg: formCostPerKg,
                 bedTemperature: formBedTemp === '' ? null : formBedTemp,
                 nozzleTemperature: formNozzleTemp === '' ? null : formNozzleTemp
             }
@@ -111,6 +113,7 @@ export default function MaterialsPage() {
         setFormRemainingWeight(mat.remainingWeightGrams)
         setFormBedTemp(mat.bedTemperature ?? '')
         setFormNozzleTemp(mat.nozzleTemperature ?? '')
+        setFormCostPerKg(mat.costPerKg || 0)
         setIsDialogOpen(true)
     }
 
@@ -125,6 +128,7 @@ export default function MaterialsPage() {
         setFormRemainingWeight(1000)
         setFormBedTemp('')
         setFormNozzleTemp('')
+        setFormCostPerKg(0)
     }
 
     const handleDelete = async (id: string) => {
@@ -180,6 +184,9 @@ export default function MaterialsPage() {
                                             <div className="flex items-center gap-2 mt-1">
                                                 <Badge variant="secondary" className="text-[9px] font-black tracking-widest rounded-lg px-2 py-0">{mat.type}</Badge>
                                                 <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-tighter">{mat.brand || 'Genérico'}</span>
+                                                <Badge variant="outline" className="text-[9px] font-black tracking-widest rounded-lg px-2 py-0 border-emerald-100 dark:border-emerald-950 text-emerald-600 dark:text-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20">
+                                                    $ {Number(mat.costPerKg).toLocaleString('es-AR')} / {mat.unit === 'g' ? 'kg' : mat.unit}
+                                                </Badge>
                                             </div>
                                         </div>
                                     </div>
@@ -376,6 +383,22 @@ export default function MaterialsPage() {
                                 />
                             </div>
                         )}
+
+                        <div className="grid gap-2 border-t border-zinc-50 dark:border-zinc-800/50 pt-4">
+                            <label className="text-sm font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-500">Costo de Adquisición ($)</label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500 font-bold">$</span>
+                                <Input
+                                    type="number"
+                                    value={formCostPerKg}
+                                    onChange={(e) => setFormCostPerKg(Number(e.target.value))}
+                                    placeholder="Ej: 17500"
+                                    className="pl-7 font-black text-emerald-600 dark:text-emerald-500 border-emerald-100 dark:border-emerald-900 bg-emerald-50/10"
+                                />
+                            </div>
+                            <p className="text-[10px] text-zinc-500 italic">Precio pagado por {formUnit === 'g' ? '1kg (1000g)' : `1 unidad (${formUnit})`} de este material.</p>
+                        </div>
+
                         <div className="grid gap-2">
                             <label className="text-sm font-medium">Color del Material</label>
                             <div className="flex flex-wrap gap-2 mb-2">

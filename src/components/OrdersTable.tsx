@@ -12,7 +12,7 @@ import { Money } from '@/src/components/Money'
 import { DateTag } from '@/src/components/DateTag'
 import { Pedido, OrderStatus } from '@/src/types'
 import Link from 'next/link'
-import { ArrowUp, ArrowDown, ArrowUpDown, Loader2, Eye, ChevronRight, MessageCircle } from 'lucide-react'
+import { ArrowUp, ArrowDown, ArrowUpDown, Loader2, Eye, ChevronRight, MessageCircle, TrendingUp } from 'lucide-react'
 import { Button } from '@/src/components/ui/button'
 import { formatARS } from '@/src/lib/money'
 import { usePedidos } from '../context/PedidosContext'
@@ -28,11 +28,30 @@ interface OrdersTableProps {
     sortDir?: 'asc' | 'desc'
     onSort?: (key: string) => void
     employees: Employee[]
+    hideTypeColumn?: boolean
+    hideFinancials?: boolean
+    hideUrgency?: boolean
+    hideDelivery?: boolean
+    onSell?: (order: Pedido) => void
+    clientLabel?: string
 }
 
 import { cn } from '@/src/lib/utils'
 
-export function OrdersTable({ orders, getClientName, sortKey, sortDir, onSort, employees }: OrdersTableProps) {
+export function OrdersTable({
+    orders,
+    getClientName,
+    sortKey,
+    sortDir,
+    onSort,
+    employees,
+    hideTypeColumn,
+    hideFinancials,
+    hideUrgency,
+    hideDelivery,
+    onSell,
+    clientLabel
+}: OrdersTableProps) {
     const { updatePedido } = usePedidos()
     const { negocioActivoId } = useNegocio()
     const [updatingOrders, setUpdatingOrders] = useState<Set<string>>(new Set())
@@ -48,9 +67,11 @@ export function OrdersTable({ orders, getClientName, sortKey, sortDir, onSort, e
 
     const getStatusStyles = (status: string) => {
         const stage = config.productionStages.find(s => s.key === status);
-        if (stage) {
+        if (stage && stage.color) {
             // Using the color defined in config, mapping bg to text/border colors
-            const baseColor = stage.color.split('-')[1]; // e.g., 'blue', 'emerald'
+            const parts = stage.color.split('-');
+            const baseColor = parts.length > 1 ? parts[1] : 'zinc';
+
             if (baseColor === 'zinc') return 'bg-zinc-100 text-zinc-600 border-zinc-200';
             return `bg-${baseColor}-50 text-${baseColor}-600 border-${baseColor}-200 dark:bg-${baseColor}-950/20 dark:text-${baseColor}-400 dark:border-${baseColor}-900/50`;
         }
@@ -79,30 +100,35 @@ export function OrdersTable({ orders, getClientName, sortKey, sortDir, onSort, e
                                     <SortIcon field="numero" />
                                 </div>
                             </TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-400 py-4">Cliente</TableHead>
+                            {!hideTypeColumn && <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-400 py-4">Tipo</TableHead>}
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-400 py-4">{clientLabel || 'Cliente / Referencia'}</TableHead>
                             <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Producto Principal</TableHead>
                             <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Estado</TableHead>
                             <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Responsable</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Urgencia</TableHead>
-                            <TableHead
-                                className="cursor-pointer group select-none text-[10px] font-black uppercase tracking-widest text-zinc-400"
-                                onClick={() => onSort?.('fechaEntrega')}
-                            >
-                                <div className="flex items-center">
-                                    Entrega
-                                    <SortIcon field="fechaEntrega" />
-                                </div>
-                            </TableHead>
-                            <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-zinc-400">Pagado</TableHead>
-                            <TableHead
-                                className="text-right cursor-pointer group select-none text-[10px] font-black uppercase tracking-widest text-zinc-400"
-                                onClick={() => onSort?.('saldo')}
-                            >
-                                <div className="flex items-center justify-end">
-                                    Saldo
-                                    <SortIcon field="saldo" />
-                                </div>
-                            </TableHead>
+                            {!hideUrgency && <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Urgencia</TableHead>}
+                            {!hideDelivery && (
+                                <TableHead
+                                    className="cursor-pointer group select-none text-[10px] font-black uppercase tracking-widest text-zinc-400"
+                                    onClick={() => onSort?.('fechaEntrega')}
+                                >
+                                    <div className="flex items-center">
+                                        Entrega
+                                        <SortIcon field="fechaEntrega" />
+                                    </div>
+                                </TableHead>
+                            )}
+                            {!hideFinancials && <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-zinc-400">Pagado</TableHead>}
+                            {!hideFinancials && (
+                                <TableHead
+                                    className="text-right cursor-pointer group select-none text-[10px] font-black uppercase tracking-widest text-zinc-400"
+                                    onClick={() => onSort?.('saldo')}
+                                >
+                                    <div className="flex items-center justify-end">
+                                        Saldo
+                                        <SortIcon field="saldo" />
+                                    </div>
+                                </TableHead>
+                            )}
                             <TableHead className="w-[80px]"></TableHead>
                         </TableRow>
                     </TableHeader>
@@ -115,25 +141,39 @@ export function OrdersTable({ orders, getClientName, sortKey, sortDir, onSort, e
                                     isUpdating && "opacity-50 pointer-events-none"
                                 )}>
                                     <TableCell className="font-black text-[10px] text-zinc-400 tabular-nums">#{order.numero}</TableCell>
+                                    {!hideTypeColumn && (
+                                        <TableCell>
+                                            <div className={cn(
+                                                "inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter",
+                                                order.type === 'STOCK'
+                                                    ? "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"
+                                                    : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+                                            )}>
+                                                {order.type === 'STOCK' ? '📦 Inventario' : '👤 Cliente'}
+                                            </div>
+                                        </TableCell>
+                                    )}
                                     <TableCell>
                                         <div className="flex flex-col">
                                             <span className="text-sm font-bold text-zinc-900 dark:text-zinc-50 truncate max-w-[140px]">
-                                                {getClientName(order.clienteId) === 'Cliente Desconocido' && order.clientName
-                                                    ? order.clientName
-                                                    : getClientName(order.clienteId)}
+                                                {order.type === 'STOCK'
+                                                    ? (order.items && order.items.length > 0 ? order.items[0].nombreProducto : 'PROD. STOCK')
+                                                    : (getClientName(order.clienteId) === 'Cliente Desconocido' && order.clientName
+                                                        ? order.clientName
+                                                        : getClientName(order.clienteId))}
                                             </span>
                                         </div>
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex flex-col">
-                                            <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400 truncate max-w-[180px]">
+                                            <span className="text-[13px] font-bold text-zinc-800 dark:text-zinc-200 truncate max-w-[200px]">
                                                 {order.items && order.items.length > 0
                                                     ? order.items[0].nombreProducto
                                                     : 'Sin productos'}
                                             </span>
                                             {order.items && order.items.length > 1 && (
-                                                <span className="text-[9px] font-black text-primary/60 uppercase tracking-tighter">
-                                                    +{order.items.length - 1} adicionales
+                                                <span className="text-[9px] font-black text-primary/70 dark:text-primary/40 uppercase tracking-[0.1em] mt-0.5">
+                                                    +{order.items.length - 1} ítems adicionales
                                                 </span>
                                             )}
                                         </div>
@@ -174,38 +214,63 @@ export function OrdersTable({ orders, getClientName, sortKey, sortDir, onSort, e
                                             <span className="text-[10px] font-bold text-zinc-400 uppercase italic">Sin asignar</span>
                                         )}
                                     </TableCell>
-                                    <TableCell>
-                                        <BadgeUrgencia urgencia={order.urgencia} />
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex flex-col">
-                                            <span className="text-xs font-bold text-zinc-900 dark:text-zinc-50">
-                                                {new Date(order.fechaEntrega).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
-                                            </span>
-                                            <span className="text-[9px] font-bold text-zinc-400 uppercase">
-                                                {new Date(order.fechaEntrega).toLocaleDateString('es-AR', { year: '2-digit' })}
-                                            </span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="text-xs font-bold text-emerald-600 dark:text-emerald-500">
-                                            {formatARS(order.totalSenias || 0)}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Money amount={order.saldo} className="text-sm font-black text-zinc-900 dark:text-zinc-50" />
-                                    </TableCell>
+                                    {!hideUrgency && (
+                                        <TableCell>
+                                            <BadgeUrgencia urgencia={order.urgencia} />
+                                        </TableCell>
+                                    )}
+                                    {!hideDelivery && (
+                                        <TableCell>
+                                            {order.fechaEntrega ? (
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-bold text-zinc-900 dark:text-zinc-50">
+                                                        {new Date(order.fechaEntrega).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
+                                                    </span>
+                                                    <span className="text-[9px] font-bold text-zinc-400 uppercase">
+                                                        {new Date(order.fechaEntrega).toLocaleDateString('es-AR', { year: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-[9px] font-black text-zinc-300 uppercase italic">Sin fecha</span>
+                                            )}
+                                        </TableCell>
+                                    )}
+                                    {!hideFinancials && (
+                                        <TableCell className="text-right">
+                                            <div className="text-xs font-bold text-emerald-600 dark:text-emerald-500">
+                                                {formatARS(order.totalSenias || 0)}
+                                            </div>
+                                        </TableCell>
+                                    )}
+                                    {!hideFinancials && (
+                                        <TableCell className="text-right">
+                                            <Money amount={order.saldo} className="text-sm font-black text-zinc-900 dark:text-zinc-50" />
+                                        </TableCell>
+                                    )}
                                     <TableCell>
                                         <div className="flex items-center gap-1 justify-end">
-                                            <WhatsAppButton
-                                                phone={order.clientPhone}
-                                                message={`Hola ${getClientName(order.clienteId)}! Te escribimos sobre tu pedido ${order.numero} que está actualmente en estado: ${config.productionStages.find(s => s.key === order.estado)?.label || order.estado}.`}
-                                                variant="ghost"
-                                                size="icon"
-                                                showLabel={false}
-                                                className="h-8 w-8 rounded-xl text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
-                                            />
-                                            <Link href={`/pedidos/${order.id}`} className={isUpdating ? "pointer-events-none" : ""}>
+                                            {order.type !== 'STOCK' && (
+                                                <WhatsAppButton
+                                                    phone={order.clientPhone}
+                                                    message={`Hola ${getClientName(order.clienteId)}! Te escribimos sobre tu pedido ${order.numero} que está actualmente en estado: ${config.productionStages.find(s => s.key === order.estado)?.label || order.estado}.`}
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    showLabel={false}
+                                                    className="h-8 w-8 rounded-xl text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                                                />
+                                            )}
+                                            {order.estado === 'IN_STOCK' && onSell && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSell(order); }}
+                                                    className="h-8 w-8 rounded-xl text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                                                    title="Vender Producto"
+                                                >
+                                                    <TrendingUp className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                            <Link href={`/pedidos/${order.id}`} prefetch={false} className={isUpdating ? "pointer-events-none" : ""}>
                                                 <Button variant="ghost" size="icon" disabled={isUpdating} className="h-8 w-8 rounded-xl text-zinc-400 hover:text-primary transition-colors">
                                                     <Eye className="h-4 w-4" />
                                                 </Button>
@@ -228,14 +293,28 @@ export function OrdersTable({ orders, getClientName, sortKey, sortDir, onSort, e
                             "relative rounded-2xl border border-zinc-200/60 bg-white p-5 dark:border-zinc-800/50 dark:bg-zinc-950/50 shadow-sm transition-all active:scale-[0.98]",
                             isUpdating && "opacity-50 pointer-events-none"
                         )}>
-                            <Link href={`/pedidos/${order.id}`} className="absolute inset-0 z-0" />
+                            <Link href={`/pedidos/${order.id}`} prefetch={false} className="absolute inset-0 z-0" />
                             <div className="relative z-10 flex items-start justify-between mb-4">
                                 <div className="space-y-1">
-                                    <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">#{order.numero}</div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">#{order.numero}</div>
+                                        {!hideTypeColumn && (
+                                            <div className={cn(
+                                                "inline-flex items-center px-1.5 py-0.5 rounded-[4px] text-[8px] font-black uppercase tracking-tighter",
+                                                order.type === 'STOCK'
+                                                    ? "bg-purple-100 text-purple-600 dark:bg-purple-900/40"
+                                                    : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800"
+                                            )}>
+                                                {order.type === 'STOCK' ? 'INVENTARIO' : 'CLIENTE'}
+                                            </div>
+                                        )}
+                                    </div>
                                     <div className="text-base font-black text-zinc-900 dark:text-zinc-50 leading-tight">
-                                        {getClientName(order.clienteId) === 'Cliente Desconocido' && order.clientName
-                                            ? order.clientName
-                                            : getClientName(order.clienteId)}
+                                        {order.type === 'STOCK'
+                                            ? '📦 REPOSICIÓN INV.'
+                                            : (getClientName(order.clienteId) === 'Cliente Desconocido' && order.clientName
+                                                ? order.clientName
+                                                : getClientName(order.clienteId))}
                                     </div>
                                     <div className="text-xs font-medium text-zinc-500 line-clamp-1">
                                         {order.items && order.items.length > 0
@@ -244,14 +323,26 @@ export function OrdersTable({ orders, getClientName, sortKey, sortDir, onSort, e
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 z-20">
-                                    <WhatsAppButton
-                                        phone={order.clientPhone}
-                                        message={`Hola ${getClientName(order.clienteId)}! Te escribimos sobre tu pedido ${order.numero} que está actualmente en estado: ${currentStage?.label || order.estado}.`}
-                                        variant="outline"
-                                        size="icon"
-                                        showLabel={false}
-                                        className="h-9 w-9 rounded-xl border-zinc-200 dark:border-zinc-800 text-emerald-600 shadow-sm"
-                                    />
+                                    {order.type !== 'STOCK' && (
+                                        <WhatsAppButton
+                                            phone={order.clientPhone}
+                                            message={`Hola ${getClientName(order.clienteId)}! Te escribimos sobre tu pedido ${order.numero} que está actualmente en estado: ${currentStage?.label || order.estado}.`}
+                                            variant="outline"
+                                            size="icon"
+                                            showLabel={false}
+                                            className="h-9 w-9 rounded-xl border-zinc-200 dark:border-zinc-800 text-emerald-600 shadow-sm"
+                                        />
+                                    )}
+                                    {order.estado === 'IN_STOCK' && onSell && (
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSell(order); }}
+                                            className="h-9 w-9 rounded-xl border-emerald-100 text-emerald-600 shadow-sm bg-emerald-50/50"
+                                        >
+                                            <TrendingUp className="h-4 w-4" />
+                                        </Button>
+                                    )}
                                     <div className="h-9 w-9 rounded-xl border border-zinc-100 dark:border-zinc-800 flex items-center justify-center bg-zinc-50/50 dark:bg-zinc-900/50">
                                         <ChevronRight className="h-4 w-4 text-zinc-400" />
                                     </div>
@@ -272,7 +363,7 @@ export function OrdersTable({ orders, getClientName, sortKey, sortDir, onSort, e
                                 >
                                     {currentStage?.label || order.estado}
                                 </div>
-                                <BadgeUrgencia urgencia={order.urgencia} />
+                                {!hideUrgency && <BadgeUrgencia urgencia={order.urgencia} />}
                                 {order.responsableGeneral && (
                                     <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
                                         <div className="h-4 w-4 rounded-full bg-primary/20 flex items-center justify-center text-[8px] font-black text-primary uppercase">
@@ -286,16 +377,22 @@ export function OrdersTable({ orders, getClientName, sortKey, sortDir, onSort, e
                             </div>
 
                             <div className="relative z-10 flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 pt-4">
-                                <div className="flex flex-col">
-                                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Entrega</span>
-                                    <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                                        {new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(order.fechaEntrega))}
-                                    </span>
-                                </div>
-                                <div className="flex flex-col items-end">
-                                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Saldo Pendiente</span>
-                                    <Money amount={order.saldo} className="text-base font-black text-zinc-950 dark:text-zinc-50" />
-                                </div>
+                                {!hideDelivery && (
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Entrega</span>
+                                        <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                            {order.fechaEntrega
+                                                ? new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(order.fechaEntrega))
+                                                : 'Sin Programar'}
+                                        </span>
+                                    </div>
+                                )}
+                                {!hideFinancials && (
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Saldo Pendiente</span>
+                                        <Money amount={order.saldo} className="text-base font-black text-zinc-950 dark:text-zinc-50" />
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )

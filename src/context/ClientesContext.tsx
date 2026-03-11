@@ -4,7 +4,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { toast } from 'react-hot-toast'
 import { api } from '@/src/lib/api'
 import { useNegocio } from '@/src/context/NegocioContext'
-
 import { usePathname } from 'next/navigation'
 
 export interface Cliente {
@@ -23,69 +22,98 @@ interface ClientesContextType {
     addCliente: (negocioId: string, cliente: Omit<Cliente, 'id' | 'negocioId' | 'createdAt' | 'totalPedidos'>) => Promise<void>
     updateCliente: (negocioId: string, id: string, datos: Partial<Omit<Cliente, 'id' | 'negocioId' | 'createdAt'>>) => Promise<void>
     removeCliente: (negocioId: string, id: string) => Promise<void>
-    refresh: (q?: string) => Promise<void>
+    refresh: (q?: string, force?: boolean) => Promise<void>
     loading: boolean
 }
 
 const ClientesContext = createContext<ClientesContextType | undefined>(undefined)
+
+// Cache global para evitar re-peticiones innecesarias (TTL de 30 segundos)
+const CACHE_TTL = 30000;
 
 export function ClientesProvider({ children }: { children: React.ReactNode }) {
     const [clientes, setClientes] = useState<Record<string, Cliente[]>>({})
     const [loading, setLoading] = useState(false)
     const { negocioActivoId } = useNegocio()
 
-    const refresh = useCallback(async (q?: string) => {
+    const lastFetchTime = useRef<Record<string, number>>({})
+    const pendingRequest = useRef<Promise<any> | null>(null)
+    const lastQuery = useRef<string | undefined>('')
+
+    const refresh = useCallback(async (q?: string, force = false) => {
         if (!negocioActivoId) return
 
-        setLoading(true)
+        // Si es la misma query y se hizo hace menos de 30s, no repetimos (a menos que sea force)
+        const now = Date.now()
+        const isSameQuery = lastQuery.current === q
+        if (!force && isSameQuery && lastFetchTime.current[negocioActivoId] && (now - lastFetchTime.current[negocioActivoId] < CACHE_TTL)) {
+            return
+        }
+
+        // De-duplicación de peticiones: si ya hay una igual en curso, esperamos a esa
+        if (pendingRequest.current && isSameQuery) {
+            return pendingRequest.current
+        }
+
         try {
-            const data: any = await api.customers.getAll({
+            setLoading(true)
+            lastQuery.current = q
+
+            // Guardamos la promesa en curso
+            pendingRequest.current = api.customers.getAll({
                 businessId: negocioActivoId,
                 q
             })
 
-            const mappedList = data.items?.map((c: any) => ({
-                id: c.id,
-                negocioId: c.businessId,
-                nombre: c.name,
-                telefono: c.phone || '',
-                email: c.email || '',
-                notas: c.notes || '',
-                createdAt: c.createdAt,
-                totalPedidos: c.totalOrders || 0
-            })) || []
+            const data: any = await pendingRequest.current
+
+            const mappedList = data.items
+                ?.map((c: any) => ({
+                    id: c.id,
+                    negocioId: c.businessId,
+                    nombre: c.name,
+                    telefono: c.phone || '',
+                    email: c.email || '',
+                    notas: c.notes || '',
+                    createdAt: c.createdAt,
+                    totalPedidos: c.totalOrders || 0
+                }))
+                .filter((c: any) => c.nombre.toUpperCase() !== 'STOCK') || []
 
             setClientes(prev => ({
                 ...prev,
                 [negocioActivoId]: mappedList
             }))
+
+            lastFetchTime.current[negocioActivoId] = Date.now()
         } catch (error) {
-            console.error('Error fetching customers:', error)
+            console.error('[ClientesContext] Error fetching customers:', error)
         } finally {
             setLoading(false)
+            pendingRequest.current = null
         }
     }, [negocioActivoId])
-
-    const lastFetchedId = useRef<string | null>(null)
 
     const pathname = usePathname()
 
     useEffect(() => {
-        // Solo refrescar si cambia el negocio o el path, y no es el mismo que ya pedimos (si el path es el mismo)
         if (!negocioActivoId) return
-
         if (pathname === '/login' || pathname === '/register') return
 
-        // OPTIMIZACIÓN: Solo cargar clientes si estamos en una pantalla que los usa
         const screensThatNeedClientes = ['/clientes', '/pedidos', '/produccion'];
         const isRelevantPath = screensThatNeedClientes.some(p => pathname.startsWith(p));
 
         if (isRelevantPath) {
-            // Si el negocio cambió, reseteamos el lastFetchedId
-            lastFetchedId.current = negocioActivoId
-            refresh()
+            // Solo refrescar si no hay datos o el caché expiró
+            const now = Date.now()
+            const hasData = !!clientes[negocioActivoId]
+            const isExpired = !lastFetchTime.current[negocioActivoId] || (now - lastFetchTime.current[negocioActivoId] > CACHE_TTL)
+
+            if (!hasData || isExpired) {
+                refresh()
+            }
         }
-    }, [negocioActivoId, pathname, refresh])
+    }, [negocioActivoId, pathname, refresh]) // Quitamos 'clientes' de dep para evitar loop
 
     const addCliente = async (negocioId: string, data: Omit<Cliente, 'id' | 'negocioId' | 'createdAt' | 'totalPedidos'>) => {
         try {
@@ -96,7 +124,7 @@ export function ClientesProvider({ children }: { children: React.ReactNode }) {
                 phone: data.telefono,
                 notes: data.notas
             })
-            await refresh()
+            await refresh(undefined, true) // Force refresh
             toast.success(`Cliente ${data.nombre} guardado correctamente.`)
         } catch (error: any) {
             toast.error('Error al guardar cliente: ' + error.message)
@@ -112,7 +140,7 @@ export function ClientesProvider({ children }: { children: React.ReactNode }) {
                 phone: datos.telefono,
                 notes: datos.notas
             })
-            await refresh()
+            await refresh(undefined, true) // Force refresh
             toast.success('Cliente actualizado.')
         } catch (error: any) {
             toast.error('Error al actualizar cliente: ' + error.message)
@@ -122,7 +150,7 @@ export function ClientesProvider({ children }: { children: React.ReactNode }) {
     const removeCliente = async (negocioId: string, id: string) => {
         try {
             await api.customers.remove(id)
-            await refresh()
+            await refresh(undefined, true)
             toast.success('Cliente eliminado correctamente.')
         } catch (error: any) {
             toast.error('Error al eliminar cliente: ' + error.message)
