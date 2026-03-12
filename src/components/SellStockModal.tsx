@@ -65,39 +65,39 @@ export function SellStockModal({ order, isOpen, onClose, onConfirm }: SellStockM
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] p-8 border-none shadow-2xl overflow-hidden bg-white dark:bg-zinc-950">
                 <DialogHeader className="space-y-4">
-                    <div className="h-14 w-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center mb-2">
+                    <div className="h-14 w-14 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center mb-2">
                         <DollarSign className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
                     </div>
-                    <DialogTitle className="text-2xl font-black uppercase tracking-tight">Registrar Venta Directa</DialogTitle>
+                    <DialogTitle className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Registrar Venta Directa</DialogTitle>
                     <p className="text-sm text-zinc-500 font-medium">
-                        Registra la salida de <span className="font-bold text-zinc-900 dark:text-zinc-100">{order.items?.[0]?.nombreProducto || 'Producto'}</span> del inventario.
+                        Registra la salida de <span className="font-bold text-primary italic">{order.items?.[0]?.nombreProducto || 'Producto'}</span> del inventario.
                     </p>
                 </DialogHeader>
 
                 <div className="py-8 space-y-6">
                     <div className="grid grid-cols-1 gap-6">
                         <div className="space-y-2">
-                            <Label className="text-[11px] font-black uppercase tracking-widest text-zinc-400 ml-1">Precio de Venta Final ($)</Label>
+                            <Label className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 ml-1">Precio de Venta Final ($)</Label>
                             <div className="relative group">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-900 transition-colors font-black">$</span>
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-primary transition-colors font-bold">$</span>
                                 <Input
                                     type="number"
                                     value={price || ''}
                                     onChange={e => setPrice(Number(e.target.value))}
-                                    className="h-14 pl-10 rounded-2xl bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-100 dark:border-zinc-800 font-black text-xl focus:bg-white dark:focus:bg-zinc-900 transition-all"
+                                    className="h-14 pl-10 rounded-2xl bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-100 dark:border-zinc-800 font-bold text-2xl focus:bg-white dark:focus:bg-zinc-900 transition-all text-primary focus:ring-2 focus:ring-primary/10"
                                     placeholder="0.00"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-[11px] font-black uppercase tracking-widest text-zinc-400 ml-1">Cliente / Referencia</Label>
+                            <Label className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 ml-1">Cliente / Referencia</Label>
                             <div className="relative group">
-                                <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400 group-focus-within:text-zinc-900 transition-colors" />
+                                <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400 group-focus-within:text-primary transition-colors" />
                                 <Input
                                     value={clientName}
                                     onChange={e => setClientName(e.target.value)}
-                                    className="h-12 pl-12 rounded-2xl bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-100 dark:border-zinc-800 font-bold focus:bg-white dark:focus:bg-zinc-900 transition-all"
+                                    className="h-12 pl-12 rounded-2xl bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-100 dark:border-zinc-800 font-bold focus:bg-white dark:focus:bg-zinc-900 transition-all focus:ring-2 focus:ring-primary/10"
                                     placeholder="Ej: Consumidor Final, Juan Pérez, Feria..."
                                 />
                             </div>
@@ -132,19 +132,19 @@ export function SellStockModal({ order, isOpen, onClose, onConfirm }: SellStockM
                     </div>
                 </div>
 
-                <DialogFooter className="flex flex-col sm:flex-row gap-4">
+                <DialogFooter className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-zinc-50 dark:border-zinc-900/50">
                     <Button
                         type="button"
                         variant="ghost"
                         onClick={onClose}
-                        className="flex-1 h-12 rounded-2xl font-black uppercase tracking-widest text-[11px]"
+                        className="flex-1 h-12 rounded-2xl font-bold uppercase tracking-widest text-[10px] text-zinc-400 hover:text-zinc-600"
                     >
                         Cancelar
                     </Button>
                     <Button
                         onClick={handleConfirm}
                         disabled={loading || !price}
-                        className="flex-1 h-12 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-500/20 font-black uppercase tracking-widest text-[11px]"
+                        className="flex-1 h-12 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:opacity-90 text-white shadow-lg shadow-emerald-500/20 font-bold uppercase tracking-widest text-[10px] active:scale-[0.98] transition-all"
                     >
                         {loading ? 'Procesando...' : 'Confirmar Venta'}
                     </Button>

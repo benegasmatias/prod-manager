@@ -3,12 +3,14 @@
 import { MachineGrid } from '@/src/components/MachineGrid'
 import { Button } from '@/src/components/ui/button'
 import { Badge } from '@/src/components/ui/badge'
-import { Plus, Calendar, Package, ChevronDown, Edit, Trash2 } from 'lucide-react'
+import { Plus, Calendar, Package, ChevronDown, Edit, Trash2, Settings2, Cpu, Ruler, Layers, Activity, Info, X } from 'lucide-react'
+import * as LucideIcons from 'lucide-react'
 import { useNegocio } from '@/src/context/NegocioContext'
 import { usePedidos } from '@/src/context/PedidosContext'
 import { useState, useEffect } from 'react'
 import { api } from '@/src/lib/api'
 import { Machine, MachineStatus } from '@/src/types'
+import { cn } from '@/src/lib/utils'
 
 import { toast } from 'react-hot-toast'
 import {
@@ -224,35 +226,45 @@ export default function MachinesPage() {
 
     return (
         <div className="space-y-8 pb-10">
+            {/* Header Area */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                <div>
-                    <h1 className="text-3xl font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-50">{config.labels.maquinas}</h1>
-                    <p className="text-sm font-medium text-zinc-500 mt-1 italic">Estado y gestión de unidades productivas en tiempo real</p>
+                <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                        <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Gestión de Equipamiento</span>
+                    </div>
+                    <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                        Producción y <span className="text-primary italic">{config.labels.maquinas}</span>
+                    </h1>
+                    <p className="text-sm font-medium text-zinc-500 max-w-2xl leading-relaxed">
+                        Monitoreo en tiempo real, mantenimiento preventivo y optimización de carga de trabajo por unidad operativa.
+                    </p>
                 </div>
                 <Button
-                    className="h-12 px-6 rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-black uppercase text-[10px] tracking-widest shadow-lg shadow-zinc-900/10 dark:shadow-none transition-all hover:scale-[1.02] active:scale-[0.98] gap-2 lg:h-14 lg:px-8 lg:text-xs"
+                    className="h-11 px-6 lg:h-12 lg:px-8 rounded-xl bg-primary text-primary-foreground font-bold text-xs shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all active:scale-[0.98] gap-2"
                     onClick={handleOpenCreate}
                 >
-                    <Plus className="h-4 w-4" /> Nueva Unidad
+                    <Plus className="h-4 w-4" /> Nueva {config.labels.maquinas.slice(0, -1)}
                 </Button>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4 bg-white dark:bg-zinc-900/20 p-4 rounded-[1.5rem] border border-zinc-100 dark:border-zinc-800/50 shadow-sm">
-                <div className="w-full sm:w-[280px] relative">
-                    <select className="w-full h-12 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all appearance-none cursor-pointer">
-                        <option className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">FILTRAR POR ESTADO (TODOS)</option>
-                        <option className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">OPERATIVA / LIBRE</option>
-                        <option className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">EN PRODUCCIÓN / OCUPADA</option>
-                        <option className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">MANTENIMIENTO / FUERA DE LÍNEA</option>
+            {/* Filters Section */}
+            <div className="flex flex-col sm:flex-row items-center gap-4 bg-white/70 dark:bg-zinc-900/40 p-4 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 shadow-sm backdrop-blur-sm">
+                <div className="w-full sm:w-[280px] relative group">
+                    <select className="w-full h-11 rounded-2xl border-none bg-zinc-50/50 dark:bg-zinc-950/50 px-5 text-xs font-bold text-zinc-600 dark:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all appearance-none cursor-pointer">
+                        <option>TODOS LOS ESTADOS</option>
+                        <option>OPERATIVA / LIBRE</option>
+                        <option>EN PRODUCCIÓN / OCUPADA</option>
+                        <option>MANTENIMIENTO / FUERA DE LÍNEA</option>
                     </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400 pointer-events-none" />
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none transition-colors group-hover:text-zinc-500" />
                 </div>
             </div>
 
             {loading ? (
                 <div className="py-24 flex flex-col items-center justify-center gap-4">
-                    <div className="h-12 w-12 border-4 border-zinc-100 border-t-primary rounded-full animate-spin" />
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Escaneando Red de Máquinas</p>
+                    <div className="h-10 w-10 border-4 border-zinc-100 border-t-primary rounded-full animate-spin" />
+                    <p className="text-xs font-medium text-zinc-400">Cargando unidades productivas...</p>
                 </div>
             ) : machines.length > 0 ? (
                 <MachineGrid
@@ -264,71 +276,132 @@ export default function MachinesPage() {
                     iconName={config.icons.maquinas}
                 />
             ) : (
-                <div className="py-24 text-center flex flex-col items-center justify-center gap-6 border-2 border-dashed rounded-[3rem] border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/20 dark:bg-zinc-900/10 grayscale opacity-80">
-                    <div className="h-20 w-20 rounded-3xl bg-white dark:bg-zinc-800 shadow-xl flex items-center justify-center">
-                        <Plus className="h-10 w-10 text-zinc-200 rotate-45" />
+                <div className="py-24 text-center flex flex-col items-center justify-center gap-6 border-2 border-dashed rounded-[3rem] border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/10 dark:bg-zinc-900/5">
+                    <div className="h-16 w-16 rounded-2xl bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center border border-zinc-100 dark:border-zinc-700">
+                        {(() => {
+                            const IconComponent = (LucideIcons as any)[config.icons.maquinas] || LucideIcons.Cpu;
+                            return <IconComponent className="h-7 w-7 text-zinc-300 p-0.5" />;
+                        })()}
                     </div>
-                    <div className="space-y-2 px-8">
-                        <p className="text-xl font-black text-zinc-400 uppercase tracking-tight">Sin activos registrados</p>
-                        <p className="text-sm text-zinc-500 italic max-w-sm mx-auto">Comienza añadiendo tu primera máquina para habilitar el flujo de producción.</p>
+                    <div className="space-y-1 px-8 text-center">
+                        <p className="text-lg font-bold text-zinc-400 tracking-tight">Sin {config.labels.maquinas.toLowerCase()} registradas</p>
+                        <p className="text-sm text-zinc-500 max-w-sm mx-auto">Comienza añadiendo un activo para habilitar el flujo de producción.</p>
                     </div>
                 </div>
             )}
 
             {/* Modal para Crear/Editar Máquina */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                        <DialogTitle>{editingId ? 'Editar' : 'Añadir Nueva'} {config.labels.maquinas.slice(0, -1)}</DialogTitle>
+                <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none rounded-[2.5rem] shadow-2xl bg-white dark:bg-zinc-950">
+                    <DialogHeader className="p-8 border-b border-zinc-50 dark:border-zinc-800/50 bg-zinc-50/30 dark:bg-zinc-900/10 text-left relative">
+                        <div className="flex items-center gap-4">
+                            <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group">
+                                {(() => {
+                                    const IconComponent = (LucideIcons as any)[config.icons.maquinas] || LucideIcons.Cpu;
+                                    return <IconComponent className="h-6 w-6 transition-transform group-hover:scale-110" />;
+                                })()}
+                            </div>
+                            <div className="space-y-1">
+                                <DialogTitle className="text-xl font-bold tracking-tight">
+                                    {editingId ? `Editar ${config.labels.maquinas.slice(0, -1)}` : `Nueva ${config.labels.maquinas.slice(0, -1)}`}
+                                </DialogTitle>
+                                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] leading-relaxed">
+                                    {config.labels.produccion || 'Gestión de Equipamiento'}
+                                </p>
+                            </div>
+                        </div>
                     </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">{config.labels.unidadName}</label>
-                            <Input
-                                value={formNombre}
-                                onChange={(e) => setFormNombre(e.target.value)}
-                                placeholder="Ej: Unidad #1"
-                            />
+
+                    <div className="p-8 space-y-8">
+                        <div className="space-y-6">
+                            <div className="space-y-2.5">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">
+                                    {config.labels.unidadName}
+                                </label>
+                                <div className="relative group">
+                                    <Input
+                                        value={formNombre}
+                                        onChange={(e) => setFormNombre(e.target.value)}
+                                        className="h-12 rounded-2xl border-none bg-zinc-50/50 dark:bg-zinc-950/50 px-5 text-sm font-bold focus:ring-2 focus:ring-primary/10 transition-all focus:bg-white dark:focus:bg-zinc-900"
+                                        placeholder="Ej: Impresora Pro #1 / Torno CNC"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2.5">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">
+                                    {config.labels.unidadModel}
+                                </label>
+                                <Input
+                                    value={formModelo}
+                                    onChange={(e) => setFormModelo(e.target.value)}
+                                    className="h-12 rounded-2xl border-none bg-zinc-50/50 dark:bg-zinc-950/50 px-5 text-sm font-bold focus:ring-2 focus:ring-primary/10 transition-all focus:bg-white dark:focus:bg-zinc-900"
+                                    placeholder="Especificación técnica o modelo"
+                                />
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">{config.labels.unidadModel}</label>
-                            <Input
-                                value={formModelo}
-                                onChange={(e) => setFormModelo(e.target.value)}
-                                placeholder="Ej: Especialista / Puesto"
-                            />
-                        </div>
+
                         {negocioActivo?.rubro === 'IMPRESION_3D' && (
-                            <>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Nozzle / Herramienta</label>
+                            <div className="pt-8 border-t border-zinc-50 dark:border-zinc-800/50 grid grid-cols-2 gap-6">
+                                <div className="space-y-2.5">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">
+                                        Nozzle
+                                    </label>
                                     <Input
                                         value={formNozzle}
                                         onChange={(e) => setFormNozzle(e.target.value)}
-                                        placeholder="Ej: 0.4mm"
+                                        className="h-12 rounded-2xl border-none bg-zinc-50/50 dark:bg-zinc-950/50 px-5 text-sm font-bold focus:ring-2 focus:ring-primary/10 transition-all focus:bg-white dark:focus:bg-zinc-900"
+                                        placeholder="0.4mm"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Capacidad de Filamentos (Simultáneos)</label>
-                                    <Input
-                                        type="number"
-                                        min={1}
-                                        max={16}
-                                        value={formMaxFilaments}
-                                        onChange={(e) => setFormMaxFilaments(Number(e.target.value))}
-                                        placeholder="Ej: 1 o 4 (AMS)"
-                                    />
-                                    <p className="text-[10px] text-zinc-500 italic">Define cuántos rollos puede cargar la máquina (ej: 4 si tiene AMS/Combo)</p>
+                                <div className="space-y-2.5">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">
+                                        Insumos
+                                    </label>
+                                    <div className="relative">
+                                        <Input
+                                            type="number"
+                                            min={1}
+                                            value={formMaxFilaments}
+                                            onChange={(e) => setFormMaxFilaments(Number(e.target.value))}
+                                            className="h-12 rounded-2xl border-none bg-zinc-50/50 dark:bg-zinc-950/50 px-5 text-sm font-bold focus:ring-2 focus:ring-primary/10 transition-all focus:bg-white dark:focus:bg-zinc-900 pr-12"
+                                        />
+                                        <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-zinc-400">UNID</span>
+                                    </div>
                                 </div>
-                            </>
+                            </div>
                         )}
+
+                        <div className="p-6 rounded-3xl bg-primary/5 border border-primary/10 flex gap-4 items-start mx-2">
+                            <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                            <p className="text-xs text-primary/80 font-medium leading-relaxed">
+                                Una vez creada, la unidad aparecerá disponible en el panel de producción para asignar nuevos pedidos y monitorear su estado en tiempo real.
+                            </p>
+                        </div>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={saving}>
+
+                    <DialogFooter className="p-8 pt-0 flex flex-row items-center justify-end gap-3 bg-white dark:bg-zinc-950">
+                        <Button
+                            variant="ghost"
+                            onClick={() => setIsDialogOpen(false)}
+                            disabled={saving}
+                            className="rounded-2xl font-bold h-12 px-6 text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
+                        >
                             Cancelar
                         </Button>
-                        <Button onClick={handleSave} disabled={saving}>
-                            {saving ? 'Guardando...' : 'Guardar Cambios'}
+                        <Button
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="rounded-2xl font-bold h-12 px-10 bg-primary text-white shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all active:scale-[0.98] disabled:opacity-50"
+                        >
+                            {saving ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    <span>Guardando...</span>
+                                </div>
+                            ) : (
+                                <span>{editingId ? 'Actualizar Registro' : 'Confirmar y Crear'}</span>
+                            )}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -336,57 +409,75 @@ export default function MachinesPage() {
 
             {/* Modal para Asignar Pedido */}
             <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
-                <DialogContent className="sm:max-w-[500px]">
-                    <DialogHeader>
-                        <DialogTitle>Asignar Pedido a {config.labels.maquinas.slice(0, -1)}</DialogTitle>
+                <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none rounded-[2.5rem] shadow-2xl bg-white dark:bg-zinc-950">
+                    <DialogHeader className="p-8 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-900/10 text-left">
+                        <DialogTitle className="text-xl font-bold tracking-tight">Asignar Producción</DialogTitle>
+                        <p className="text-xs text-zinc-500 font-medium mt-1">Selecciona el material y el pedido para iniciar el proceso.</p>
                     </DialogHeader>
-                    <div className="py-4 space-y-6">
-                        <div className="space-y-4">
-                            <label className="text-xs font-black uppercase tracking-widest text-zinc-400">1. Seleccionar Material / Insumo</label>
+
+                    <div className="p-8 space-y-8">
+                        <div className="space-y-3">
+                            <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 pl-1">Seleccionar Material / Insumo</label>
                             {availableMaterials.length > 0 ? (
-                                <select
-                                    className="w-full h-11 rounded-lg border border-zinc-200 bg-white dark:bg-zinc-900 px-3 text-sm font-bold dark:border-zinc-800 shadow-sm"
-                                    value={selectedMaterialId}
-                                    onChange={(e) => setSelectedMaterialId(e.target.value)}
-                                >
-                                    {availableMaterials.map(m => (
-                                        <option key={m.id} value={m.id} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
-                                            {m.name} ({m.stock} {m.unit} restantes)
-                                        </option>
-                                    ))}
-                                </select>
+                                <div className="relative group">
+                                    <select
+                                        className="w-full h-11 rounded-xl border border-zinc-200 bg-zinc-50/50 dark:bg-zinc-950/50 px-4 text-sm font-semibold dark:border-zinc-800 shadow-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer"
+                                        value={selectedMaterialId}
+                                        onChange={(e) => setSelectedMaterialId(e.target.value)}
+                                    >
+                                        {availableMaterials.map(m => (
+                                            <option key={m.id} value={m.id}>
+                                                {m.name} ({m.stock} {m.unit} disponibles)
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none transition-colors group-hover:text-zinc-500" />
+                                </div>
                             ) : (
-                                <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 text-xs text-amber-700 dark:text-amber-400">
-                                    No tienes materiales registrados. Se asignará sin control de stock.
+                                <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30">
+                                    <div className="flex items-center gap-2 text-amber-800 dark:text-amber-400 mb-1">
+                                        <Package className="h-4 w-4" />
+                                        <p className="text-xs font-bold">Sin materiales registrados</p>
+                                    </div>
+                                    <p className="text-xs text-amber-700/70 dark:text-amber-500/70 leading-relaxed">
+                                        No tienes stock cargado. Se asignará el trabajo sin descontar insumos automáticamente.
+                                    </p>
                                 </div>
                             )}
                         </div>
 
                         <div className="space-y-4">
-                            <label className="text-xs font-black uppercase tracking-widest text-zinc-400">2. Seleccionar Pedido</label>
-                            <p className="text-[11px] text-zinc-500">Selecciona un pedido pendiente para comenzar la producción.</p>
-
-                            <div className="max-h-[250px] overflow-y-auto space-y-2 pr-2">
+                            <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 pl-1">Seleccionar Pedido Pendiente</label>
+                            <div className="max-h-[280px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                                 {loadingOrders ? (
-                                    <p className="text-center py-8 text-zinc-400 animate-pulse">Cargando pedidos...</p>
+                                    <div className="py-12 flex flex-col items-center justify-center gap-2">
+                                        <div className="h-6 w-6 border-2 border-zinc-100 border-t-primary rounded-full animate-spin" />
+                                        <p className="text-[10px] font-bold text-zinc-400 uppercase">Consultando pedidos...</p>
+                                    </div>
                                 ) : pendingOrders.length > 0 ? (
                                     pendingOrders.map((order: any) => (
-                                        <div key={order.id} className="flex items-center justify-between p-3 rounded-lg border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
-                                            <div>
-                                                <p className="font-bold text-sm">{order.clientName}</p>
-                                                <p className="text-xs text-zinc-500">Código: {order.code || order.id.slice(0, 8)}</p>
+                                        <div
+                                            key={order.id}
+                                            className="group relative flex items-center justify-between p-4 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:border-zinc-200 dark:hover:border-zinc-700 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
+                                            onClick={() => handleAssignOrder(order.id)}
+                                        >
+                                            <div className="flex flex-col">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-bold text-sm text-zinc-900 dark:text-zinc-100">{order.clientName}</p>
+                                                    <span className="text-[10px] font-bold text-primary group-hover:translate-x-1 transition-transform">#{order.code || order.id.slice(0, 8)}</span>
+                                                </div>
+                                                <p className="text-[11px] text-zinc-500 font-medium">Items: {order.items?.length || 0}</p>
                                             </div>
-                                            <Button
-                                                size="sm"
-                                                onClick={() => handleAssignOrder(order.id)}
-                                                disabled={saving}
-                                            >
-                                                Seleccionar
-                                            </Button>
+                                            <div className="h-8 w-8 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                                                <Plus className="h-4 w-4" />
+                                            </div>
                                         </div>
                                     ))
                                 ) : (
-                                    <p className="text-center py-8 text-zinc-400 italic">No hay pedidos pendientes.</p>
+                                    <div className="py-12 text-center space-y-2">
+                                        <p className="text-sm font-semibold text-zinc-400">Todo al día</p>
+                                        <p className="text-xs text-zinc-500 italic">No hay pedidos pendientes para asignar.</p>
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -396,109 +487,128 @@ export default function MachinesPage() {
 
             {/* Panel Lateral de Detalles */}
             <Sheet open={isDetailSheetOpen} onOpenChange={setIsDetailSheetOpen}>
-                <SheetContent className="sm:max-w-md overflow-y-auto">
-                    <SheetHeader>
-                        <div className="flex items-center justify-between pr-8">
-                            <SheetTitle className="text-xl font-bold">Detalles de {config.labels.maquinas.slice(0, -1)}</SheetTitle>
-                            <div className="flex gap-2">
-                                <Button size="icon" variant="outline" className="h-8 w-8 rounded-lg" onClick={handleOpenEdit}>
-                                    <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button size="icon" variant="outline" className="h-8 w-8 rounded-lg border-rose-100 text-rose-500 hover:bg-rose-50" onClick={handleDelete}>
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
+                <SheetContent className="sm:max-w-md p-0 overflow-hidden border-none shadow-2xl bg-white dark:bg-zinc-950">
+                    <div className="flex flex-col h-full">
+                        <SheetHeader className="p-8 border-b border-zinc-100 dark:border-zinc-800">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <SheetTitle className="text-xl font-bold tracking-tight">Gestión de {config.labels.maquinas.slice(0, -1)}</SheetTitle>
+                                    <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider">{selectedMachineDetail?.name || 'Cargando...'}</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-9 w-9 rounded-xl border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 group"
+                                        onClick={handleOpenEdit}
+                                    >
+                                        <Edit className="h-4 w-4 text-zinc-500 group-hover:text-primary transition-colors" />
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-9 w-9 rounded-xl border-rose-100 text-rose-500 bg-rose-50/50 hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+                                        onClick={handleDelete}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
-                        </div>
-                    </SheetHeader>
+                        </SheetHeader>
 
-                    {loadingDetail ? (
-                        <div className="py-12 flex flex-col items-center justify-center space-y-4">
-                            <div className="h-8 w-8 border-4 border-zinc-200 border-t-zinc-900 rounded-full animate-spin" />
-                            <p className="text-sm text-zinc-500">Cargando información...</p>
-                        </div>
-                    ) : selectedMachineDetail ? (
-                        <div className="mt-8 space-y-8">
-                            <section className="space-y-4">
-                                <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Información General</h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
-                                        <p className="text-[10px] text-zinc-500 font-bold uppercase">Nombre</p>
-                                        <p className="text-sm font-bold">{selectedMachineDetail.name}</p>
-                                    </div>
-                                    <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
-                                        <p className="text-[10px] text-zinc-500 font-bold uppercase">Estado</p>
-                                        <div className="flex items-center gap-2">
-                                            <div className={`h-2 w-2 rounded-full ${selectedMachineDetail.status === 'IDLE' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                                            <p className="text-sm font-bold">{selectedMachineDetail.status}</p>
-                                        </div>
-                                    </div>
-                                    <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
-                                        <p className="text-[10px] text-zinc-500 font-bold uppercase">{config.labels.unidadModel}</p>
-                                        <p className="text-sm font-bold">{selectedMachineDetail.model || 'N/A'}</p>
-                                    </div>
-                                    {negocioActivo?.rubro === 'IMPRESION_3D' && (
-                                        <>
-                                            <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
-                                                <p className="text-[10px] text-zinc-500 font-bold uppercase">Nozzle</p>
-                                                <p className="text-sm font-bold">{selectedMachineDetail.nozzle || 'N/A'}</p>
-                                            </div>
-                                            <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
-                                                <p className="text-[10px] text-zinc-500 font-bold uppercase">Capacidad Colores</p>
-                                                <p className="text-sm font-bold">{selectedMachineDetail.maxFilaments || 1}</p>
-                                            </div>
-                                        </>
-                                    )}
+                        <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
+                            {loadingDetail ? (
+                                <div className="h-full flex flex-col items-center justify-center space-y-4">
+                                    <div className="h-10 w-10 border-4 border-zinc-100 border-t-primary rounded-full animate-spin" />
+                                    <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Sincronizando...</p>
                                 </div>
-                            </section>
-
-                            <section className="space-y-4">
-                                <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Historial de Producción</h3>
-                                <div className="space-y-3">
-                                    {selectedMachineDetail.productionJobs?.length > 0 ? (
-                                        selectedMachineDetail.productionJobs.map((job: any) => (
-                                            <div key={job.id} className="p-4 rounded-xl border border-zinc-100 dark:border-zinc-800 space-y-3 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
-                                                <div className="flex justify-between items-start">
-                                                    <div className="space-y-0.5">
-                                                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tight">#{job.order?.code || job.orderId.slice(0, 8)}</p>
-                                                        <p className="text-sm font-black text-zinc-900 dark:text-zinc-100">{job.order?.clientName || 'Cliente desconocido'}</p>
-                                                    </div>
-                                                    <Badge variant={job.status === 'DONE' ? 'secondary' : 'default'} className="text-[9px] font-black uppercase px-2 py-0.5">
-                                                        {job.status === 'DONE' ? 'Finalizado' : 'En Curso'}
-                                                    </Badge>
-                                                </div>
-
-                                                <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 shadow-sm">
-                                                    <div className="p-1.5 rounded-md bg-zinc-50 dark:bg-zinc-900">
-                                                        <Package className="h-3.5 w-3.5 text-zinc-400" />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-[9px] text-zinc-400 font-bold uppercase leading-none mb-1">Producto / Ítem</p>
-                                                        <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 truncate">
-                                                            {job.orderItem?.name || 'Ítem no especificado'}
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex justify-between items-center pt-1">
-                                                    <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-medium">
-                                                        <Calendar className="h-3 w-3" />
-                                                        <span>{new Date(job.createdAt).toLocaleDateString()}</span>
-                                                    </div>
-                                                    <div className="text-[10px] font-black text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md">
-                                                        {job.totalUnits} UNID.
-                                                    </div>
+                            ) : selectedMachineDetail ? (
+                                <>
+                                    <section className="space-y-5">
+                                        <h3 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 pl-1">Especificaciones</h3>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-all hover:border-zinc-200 shadow-sm">
+                                                <p className="text-[10px] text-zinc-400 font-bold uppercase mb-1">Estado Operativo</p>
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`h-2 w-2 rounded-full ${selectedMachineDetail.status === 'IDLE' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]'}`} />
+                                                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{selectedMachineDetail.status === 'IDLE' ? 'Libre' : 'Produciendo'}</p>
                                                 </div>
                                             </div>
-                                        ))
-                                    ) : (
-                                        <div className="py-8 text-center border border-dashed rounded-xl border-zinc-200 dark:border-zinc-800">
-                                            <p className="text-xs text-zinc-500 italic">No hay historial registrado.</p>
+                                            <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-all hover:border-zinc-200 shadow-sm">
+                                                <p className="text-[10px] text-zinc-400 font-bold uppercase mb-1">{config.labels.unidadModel}</p>
+                                                <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{selectedMachineDetail.model || 'N/A'}</p>
+                                            </div>
+                                            {negocioActivo?.rubro === 'IMPRESION_3D' && (
+                                                <>
+                                                    <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800  shadow-sm">
+                                                        <p className="text-[10px] text-zinc-400 font-bold uppercase mb-1">Nozzle actual</p>
+                                                        <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{selectedMachineDetail.nozzle || '0.4mm'}</p>
+                                                    </div>
+                                                    <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 shadow-sm">
+                                                        <p className="text-[10px] text-zinc-400 font-bold uppercase mb-1">Capacidad Max.</p>
+                                                        <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{selectedMachineDetail.maxFilaments || 1} Rollos</p>
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                            </section>
+                                    </section>
+
+                                    <section className="space-y-5">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 pl-1">Historial Reciente</h3>
+                                            <Badge variant="outline" className="text-[10px] bg-zinc-100 dark:bg-zinc-900 font-bold">Últimos trabajos</Badge>
+                                        </div>
+                                        <div className="space-y-4">
+                                            {selectedMachineDetail.productionJobs?.length > 0 ? (
+                                                selectedMachineDetail.productionJobs.map((job: any) => (
+                                                    <div key={job.id} className="group p-5 rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900/20 space-y-4 hover:shadow-md transition-all duration-300">
+                                                        <div className="flex justify-between items-start">
+                                                            <div className="space-y-1">
+                                                                <p className="text-[10px] font-bold text-primary uppercase tracking-tight">#{job.order?.code || job.orderId.slice(0, 8)}</p>
+                                                                <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{job.order?.clientName || 'Cliente'}</p>
+                                                            </div>
+                                                            <div className={cn(
+                                                                "text-[9px] font-bold uppercase px-2.5 py-1 rounded-full",
+                                                                job.status === 'DONE' ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30" : "bg-blue-50 text-blue-600 dark:bg-blue-950/30"
+                                                            )}>
+                                                                {job.status === 'DONE' ? 'Terminado' : 'En Curso'}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex items-start gap-3 p-3 rounded-xl bg-zinc-50/50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800/50 group-hover:bg-zinc-50 transition-colors">
+                                                            <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 shadow-sm">
+                                                                <Package className="h-4 w-4 text-zinc-400" />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-[10px] text-zinc-500 font-bold uppercase mb-0.5">Producto / Ítem</p>
+                                                                <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 truncate leading-relaxed">
+                                                                    {job.orderItem?.name || 'Item General'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex justify-between items-center pt-2">
+                                                            <div className="flex items-center gap-2 text-[11px] text-zinc-500 font-medium">
+                                                                <Calendar className="h-3.5 w-3.5 opacity-60" />
+                                                                <span>{new Date(job.createdAt).toLocaleDateString()}</span>
+                                                            </div>
+                                                            <div className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-lg">
+                                                                {job.totalUnits || 1} UNID.
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="py-12 text-center border-2 border-dashed rounded-2xl border-zinc-100 dark:border-zinc-800 bg-zinc-50/10">
+                                                    <p className="text-xs text-zinc-400 italic">No hay registros previos en este activo.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </section>
+                                </>
+                            ) : null}
                         </div>
-                    ) : null}
+                    </div>
                 </SheetContent>
             </Sheet>
         </div>

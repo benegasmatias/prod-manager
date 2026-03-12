@@ -23,10 +23,8 @@ export async function fetchApi<T>(path: string, options: RequestInit = {}): Prom
         const { data: { session } } = await supabase.auth.getSession();
         let token: string | null | undefined = session?.access_token;
 
-        // 2. Fallback a localStorage por compatibilidad
-        if (!token && typeof window !== 'undefined') {
-            token = localStorage.getItem('prodmanager_token');
-        }
+        // 2. Fallback a cookie si el session falla (opcional, pero getSession suele bastar)
+        // Eliminamos el localStorage 'prodmanager_token' para evitar usar tokens viejos.
 
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
@@ -40,16 +38,14 @@ export async function fetchApi<T>(path: string, options: RequestInit = {}): Prom
         });
 
         if (response.status === 401) {
-            if (typeof window !== 'undefined' && !isRedirectingToLogin) {
-                const currentPath = window.location.pathname;
-                if (currentPath !== '/login' && currentPath !== '/register') {
-                    isRedirectingToLogin = true;
-                    console.warn('[fetchApi] 401 Unauthorized -> redirect to /login');
-                    const fullPath = currentPath + window.location.search;
-                    window.location.href = `/login?next=${encodeURIComponent(fullPath)}`;
+            // Si no estamos ya en login, podríamos forzar una redirección
+            if (typeof window !== 'undefined') {
+                if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/auth')) {
+                    console.warn('[API] 401 detectado, redirigiendo a login...');
+                    window.location.href = `/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
                 }
             }
-            throw new Error('Sesión expirada. Redirigiendo...');
+            throw new Error('No autorizado. Sesión expirada.');
         }
 
         if (!response.ok) {

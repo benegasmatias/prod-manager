@@ -24,6 +24,7 @@ import { api } from '@/src/lib/api'
 import Link from 'next/link'
 import { Button } from '@/src/components/ui/button'
 import { cn } from '@/src/lib/utils'
+import { getStatusLabel, getStatusStyles } from '@/src/domain/negocio'
 
 const ICON_MAP: Record<string, any> = {
     TrendingUp, Wallet, Clock, AlertCircle, ShoppingCart, Printer, Zap, Cog, HardHat, Hammer, Package
@@ -42,6 +43,7 @@ interface DashboardSummary {
         total: number;
         status: string;
         dueDate: string;
+        type?: string;
     }>;
     alerts: Array<{
         type: string;
@@ -54,30 +56,14 @@ interface DashboardSummary {
 // Sistema de deduplicación global para evitar llamadas concurrentes idénticas
 const PENDING_REQUESTS = new Map<string, Promise<any>>()
 
-const STATUS_MAP: Record<string, { label: string, color: string }> = {
-    'PENDING': { label: 'Pendiente', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-    'IN_PROGRESS': { label: 'En Producción', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-    'DONE': { label: 'Terminado', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-    'READY': { label: 'Listo', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-    'DELIVERED': { label: 'Entregado', color: 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800' },
-    'CONFIRMED': { label: 'Confirmado', color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' },
-    'CANCELLED': { label: 'Cancelado', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-}
 
 export default function DashboardPage() {
     const { negocioActivoId, negocioActivo, config } = useNegocio()
     const [summary, setSummary] = useState<DashboardSummary | null>(null)
     const [loading, setLoading] = useState(true)
 
-    const getStatusStyles = (status: string) => {
-        const stage = config.productionStages.find(s => s.key === status);
-        if (stage) {
-            // Using the color defined in config, mapping bg to text/border colors
-            const baseColor = stage.color.split('-')[1]; // e.g., 'blue', 'emerald'
-            if (baseColor === 'zinc') return 'bg-zinc-100 text-zinc-600 border-zinc-200';
-            return `bg-${baseColor}-50 text-${baseColor}-600 border-${baseColor}-200 dark:bg-${baseColor}-950/20 dark:text-${baseColor}-400 dark:border-${baseColor}-900/50`;
-        }
-        return 'bg-zinc-50 text-zinc-500 border-zinc-200';
+    const getStatusStylesLocal = (status: string) => {
+        return getStatusStyles(status, negocioActivo?.rubro);
     }
 
     useEffect(() => {
@@ -112,19 +98,31 @@ export default function DashboardPage() {
         fetchSummary()
     }, [negocioActivoId])
 
-    const recentOrders = (summary?.recentOrders || []).filter(o => o.clientName !== 'STOCK')
+    const recentOrders = (summary?.recentOrders || []).filter(o =>
+        o.type !== 'STOCK' &&
+        o.clientName?.trim().toUpperCase() !== 'STOCK'
+    )
     const alerts = summary?.alerts || []
 
     return (
         <div className="space-y-10 pb-20">
-            <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl md:text-4xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 uppercase">Control <span className="text-primary italic">Center</span></h1>
-                    <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mt-1">Resumen en tiempo real de {negocioActivo?.nombre || 'tu negocio'}.</p>
+            {/* Header Area */}
+            <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                        <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Resumen Ejecutivo</span>
+                    </div>
+                    <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                        Control <span className="text-primary italic">Center</span>
+                    </h1>
+                    <p className="text-sm font-medium text-zinc-500 max-w-2xl leading-relaxed">
+                        Análisis predictivo y monitoreo operativo de {negocioActivo?.nombre || 'tu negocio'}.
+                    </p>
                 </div>
-                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                    Sistema Conectado
+                <div className="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-900/40 px-4 py-2 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">Sistema Conectado</span>
                 </div>
             </header>
 
@@ -138,19 +136,20 @@ export default function DashboardPage() {
                         <StatCard
                             key={stat.key}
                             title={stat.label}
-                            value={loading ? '...' : (stat.format === 'currency' ? <Money amount={value} /> : value)}
+                            value={stat.format === 'currency' ? <Money amount={value} /> : value}
                             icon={Icon}
                             description={i < 2 ? "Histórico acumulado" : "Estado actual"}
                             color={colors[i % colors.length] as any}
+                            isLoading={loading}
                         />
                     )
                 })}
             </div>
 
             <div className="grid gap-8 lg:grid-cols-3">
-                <Card className="lg:col-span-2 border-zinc-200/60 dark:border-zinc-800/50 shadow-sm overflow-hidden rounded-2xl">
-                    <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/30 dark:bg-zinc-900/10 px-6 py-4">
-                        <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">Últimos Movimientos</CardTitle>
+                <Card className="lg:col-span-2 border-zinc-100 dark:border-zinc-800/50 shadow-sm overflow-hidden rounded-[2.5rem] bg-white dark:bg-zinc-900/40 backdrop-blur-sm">
+                    <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-50 dark:border-zinc-800/50 bg-zinc-50/30 dark:bg-zinc-900/10 p-8">
+                        <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Últimos Movimientos</CardTitle>
                         <Link href="/pedidos" prefetch={false}>
                             <Button variant="ghost" size="sm" className="text-xs font-bold text-primary gap-1">
                                 Ver todo <ChevronRight className="h-3 w-3" />
@@ -161,21 +160,21 @@ export default function DashboardPage() {
                         <div className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
                             {loading ? (
                                 Array.from({ length: 4 }).map((_, i) => (
-                                    <div key={i} className="p-6 animate-pulse flex items-center gap-4">
-                                        <div className="h-10 w-10 rounded-full bg-zinc-100 dark:bg-zinc-800" />
-                                        <div className="flex-1 space-y-2">
-                                            <div className="h-3 w-32 bg-zinc-100 dark:bg-zinc-800 rounded" />
-                                            <div className="h-2 w-20 bg-zinc-100 dark:bg-zinc-800 rounded" />
+                                    <div key={i} className="p-5 flex items-center justify-between gap-4 animate-pulse">
+                                        <div className="flex items-center gap-4 flex-1">
+                                            <div className="h-10 w-10 shrink-0 rounded-xl bg-zinc-100 dark:bg-zinc-800" />
+                                            <div className="flex-1 space-y-2">
+                                                <div className="h-3 w-32 bg-zinc-100 dark:bg-zinc-800 rounded" />
+                                                <div className="h-2 w-20 bg-zinc-100/50 dark:bg-zinc-800/50 rounded" />
+                                            </div>
                                         </div>
+                                        <div className="h-6 w-16 bg-zinc-100 dark:bg-zinc-800 rounded-lg" />
                                     </div>
                                 ))
                             ) : recentOrders.length > 0 ? (
                                 recentOrders.map((order) => {
-                                    const stage = config.productionStages.find(s => s.key === order.status);
-                                    const coreStatus = STATUS_MAP[order.status];
-
-                                    const label = stage?.label || coreStatus?.label || order.status;
-                                    const colorClass = getStatusStyles(order.status);
+                                    const label = getStatusLabel(order.status, negocioActivo?.rubro);
+                                    const colorClass = getStatusStylesLocal(order.status);
 
                                     return (
                                         <Link key={order.id} href={`/pedidos/${order.id}`} prefetch={false} className="group block p-5 transition-all hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
@@ -221,16 +220,26 @@ export default function DashboardPage() {
                 </Card>
 
                 <div className="space-y-6">
-                    <Card className="border-zinc-200/60 dark:border-zinc-800/50 shadow-sm overflow-hidden rounded-2xl">
-                        <CardHeader className="flex flex-row items-center border-b border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/30 dark:bg-zinc-900/10 px-6 py-4">
-                            <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                    <Card className="border-zinc-100 dark:border-zinc-800/50 shadow-sm overflow-hidden rounded-[2.5rem] bg-white dark:bg-zinc-900/40 backdrop-blur-sm">
+                        <CardHeader className="flex flex-row items-center border-b border-zinc-50 dark:border-zinc-800/50 bg-zinc-50/30 dark:bg-zinc-900/10 p-8">
+                            <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
                                 <AlertCircle className="h-4 w-4 text-amber-500" />
                                 Alertas Operativas
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
                             <div className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
-                                {!loading && alerts.length > 0 ? (
+                                {loading ? (
+                                    Array.from({ length: 3 }).map((_, i) => (
+                                        <div key={i} className="p-5 flex gap-4 animate-pulse">
+                                            <div className="h-8 w-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 shrink-0" />
+                                            <div className="flex-1 space-y-2">
+                                                <div className="h-2 w-20 bg-zinc-100 dark:bg-zinc-800 rounded" />
+                                                <div className="h-3 w-full bg-zinc-100 dark:bg-zinc-800 rounded" />
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : alerts.length > 0 ? (
                                     alerts.map((alert, index) => {
                                         const isStock = alert.type === 'stock_bajo';
                                         return (
@@ -269,7 +278,7 @@ export default function DashboardPage() {
                         </CardContent>
                     </Card>
 
-                    <Card className="border-zinc-200/60 dark:border-zinc-800/50 shadow-sm overflow-hidden rounded-2xl bg-primary text-primary-foreground p-6 relative">
+                    <Card className="border-none shadow-xl shadow-primary/20 overflow-hidden rounded-[2.5rem] bg-primary text-primary-foreground p-8 relative group transition-all hover:scale-[1.02]">
                         <div className="relative z-10 flex flex-col gap-4">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-md">
                                 <TrendingUp className="h-5 w-5" />

@@ -57,8 +57,11 @@ export default function SelectBusinessPage() {
             router.push('/dashboard')
         } catch (error) {
             console.error('Error al seleccionar:', error)
-            setActionLoading(null)
             toast.error('Error al cargar espacio')
+        } finally {
+            // No reseteamos inmediatamente si estamos navegando, 
+            // pero si hay un error o tarda mucho, permitimos reintento
+            setTimeout(() => setActionLoading(null), 2000)
         }
     }
 
@@ -69,14 +72,14 @@ export default function SelectBusinessPage() {
             const response = await api.businesses.create({ templateKey })
 
             // response ahora tiene { business: { id, name, category }, defaultBusinessId }
-            setActivo(response.business.id)
+            await setActivo(response.business.id)
             toast.success(`¡Espacio ${response.business.name} creado con éxito!`)
             router.push('/dashboard')
         } catch (error: any) {
             console.error('Error creating business:', error)
             toast.error('Error al crear el espacio: ' + error.message)
         } finally {
-            setActionLoading(null)
+            setTimeout(() => setActionLoading(null), 2000)
         }
     }
 

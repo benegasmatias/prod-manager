@@ -12,9 +12,10 @@ import { Employee } from '@/src/types'
 import { Input } from '@/src/components/ui/input'
 import { Button } from '@/src/components/ui/button'
 import { OrdersTable } from '@/src/components/OrdersTable'
+import { getStatusLabel } from '@/src/domain/negocio'
 
 export default function OrdersPage() {
-    const { negocioActivoId, config } = useNegocio()
+    const { negocioActivoId, config, negocioActivo } = useNegocio()
     const { pedidos } = usePedidos()
     const { clientes } = useClientes()
 
@@ -88,25 +89,33 @@ export default function OrdersPage() {
         return c ? c.nombre : 'Cliente Desconocido'
     }, [misClientes])
 
-    const activeOrders = useMemo(() => sortedOrders.filter(o => o.estado !== 'DELIVERED'), [sortedOrders])
-    const deliveredOrders = useMemo(() => sortedOrders.filter(o => o.estado === 'DELIVERED'), [sortedOrders])
+    const activeOrders = useMemo(() => sortedOrders.filter(o => o.estado !== 'DELIVERED' && o.estado !== 'CANCELLED'), [sortedOrders])
+    const archivedOrders = useMemo(() => sortedOrders.filter(o => o.estado === 'DELIVERED' || o.estado === 'CANCELLED'), [sortedOrders])
 
     return (
         <div className="space-y-8 pb-10">
             {/* ... header and filters ... */}
+            {/* Header Area */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                <div>
-                    <h1 className="text-3xl font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-50">Pedidos</h1>
-                    <p className="text-sm font-medium text-zinc-500 mt-1 italic">Gestión operativa y seguimiento de producción</p>
+                <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                        <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Gestión Comercial</span>
+                    </div>
+                    <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                        Seguimiento de <span className="text-primary italic">Pedidos</span>
+                    </h1>
+                    <p className="text-sm font-medium text-zinc-500 max-w-2xl leading-relaxed">
+                        Administración de flujos de trabajo, órdenes de clientes y estados de entrega en tiempo real.
+                    </p>
                 </div>
                 <div className="flex items-center gap-4">
-                    <div className="flex p-1 rounded-xl bg-zinc-100/80 dark:bg-zinc-900/80 border border-zinc-200/50 dark:border-zinc-800/50">
+                    <div className="flex p-1.5 rounded-2xl bg-white/70 dark:bg-zinc-900/80 border border-zinc-200/50 dark:border-zinc-800/50 backdrop-blur-sm shadow-sm">
                         <Link
                             href="/pedidos"
                             className={cn(
-                                "flex h-9 w-12 items-center justify-center rounded-lg transition-all",
-                                "hover:bg-white dark:hover:bg-zinc-800 hover:shadow-sm",
-                                "bg-white dark:bg-zinc-800 shadow-sm text-primary"
+                                "flex h-9 w-12 items-center justify-center rounded-xl transition-all",
+                                "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
                             )}
                         >
                             <List className="h-4 w-4" />
@@ -114,14 +123,14 @@ export default function OrdersPage() {
                         <Link
                             href="/pedidos/kanban"
                             className={cn(
-                                "flex h-9 w-12 items-center justify-center rounded-lg transition-all text-zinc-400",
-                                "hover:bg-white dark:hover:bg-zinc-800 hover:shadow-sm"
+                                "flex h-9 w-12 items-center justify-center rounded-xl transition-all text-zinc-400",
+                                "hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-600 dark:hover:text-zinc-200"
                             )}
                         >
                             <LayoutGrid className="h-4 w-4" />
                         </Link>
                     </div>
-                    <Button asChild className="h-11 px-6 rounded-2xl font-black uppercase tracking-widest text-[11px] gap-2 shadow-xl shadow-primary/20">
+                    <Button asChild className="h-11 px-6 lg:h-12 lg:px-8 rounded-xl bg-primary text-primary-foreground font-bold text-xs shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all active:scale-[0.98] gap-2">
                         <Link href="/pedidos/nuevo">
                             <Plus className="h-4 w-4" /> Registrar Pedido
                         </Link>
@@ -129,14 +138,15 @@ export default function OrdersPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-white dark:bg-zinc-900/20 p-6 rounded-[2rem] border border-zinc-100 dark:border-zinc-800/50 shadow-sm">
+            {/* Filters Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-white/70 dark:bg-zinc-900/40 p-6 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800/50 shadow-sm backdrop-blur-sm">
                 <div className="lg:col-span-4 space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">Búsqueda Inteligente</label>
                     <div className="relative group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 group-focus-within:text-primary transition-colors" />
-                        <Input
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 group-focus-within:text-primary transition-colors transition-all duration-200" />
+                        <input
                             placeholder="Buscar por Nº, Cliente o Responsable..."
-                            className="pl-11 h-12 border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50 rounded-2xl font-bold focus:bg-white dark:focus:bg-zinc-900 transition-all text-zinc-900 dark:text-zinc-50"
+                            className="w-full pl-11 h-12 border-none bg-zinc-50/50 dark:bg-zinc-950/50 rounded-2xl font-bold focus:ring-2 focus:ring-primary/10 focus:bg-white dark:focus:bg-zinc-900 transition-all text-zinc-900 dark:text-zinc-50 text-sm"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -146,18 +156,18 @@ export default function OrdersPage() {
                 <div className="lg:col-span-4 grid grid-cols-2 gap-3">
                     <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">Fecha Desde</label>
-                        <Input
+                        <input
                             type="date"
-                            className="h-12 border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50 rounded-2xl font-bold focus:bg-white dark:focus:bg-zinc-900 transition-all"
+                            className="w-full h-12 border-none bg-zinc-50/50 dark:bg-zinc-950/50 rounded-2xl font-bold focus:ring-2 focus:ring-primary/10 focus:bg-white dark:focus:bg-zinc-900 transition-all text-xs px-4"
                             value={dateDesde}
                             onChange={(e) => setDateDesde(e.target.value)}
                         />
                     </div>
                     <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">Fecha Hasta</label>
-                        <Input
+                        <input
                             type="date"
-                            className="h-12 border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50 rounded-2xl font-bold focus:bg-white dark:focus:bg-zinc-900 transition-all"
+                            className="w-full h-12 border-none bg-zinc-50/50 dark:bg-zinc-950/50 rounded-2xl font-bold focus:ring-2 focus:ring-primary/10 focus:bg-white dark:focus:bg-zinc-900 transition-all text-xs px-4"
                             value={dateHasta}
                             onChange={(e) => setDateHasta(e.target.value)}
                         />
@@ -166,36 +176,38 @@ export default function OrdersPage() {
 
                 <div className="lg:col-span-2 space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">Filtrar Estado</label>
-                    <div className="relative">
+                    <div className="relative group">
                         <select
-                            className="w-full h-12 rounded-2xl border border-zinc-100 bg-white dark:bg-zinc-900 dark:border-zinc-800 px-4 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/10 appearance-none transition-all"
+                            className="w-full h-12 rounded-2xl border-none bg-zinc-50/50 dark:bg-zinc-950/50 px-4 pr-10 text-[11px] font-bold focus:ring-2 focus:ring-primary/10 appearance-none transition-all cursor-pointer"
                             value={estadoFilter}
                             onChange={(e) => setEstadoFilter(e.target.value)}
                         >
-                            <option value="all" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">TODOS LOS ACTIVOS</option>
+                            <option value="all">TODOS LOS ACTIVOS</option>
                             {config.productionStages.map(stage => (
-                                <option key={stage.key} value={stage.key} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">{stage.label.toUpperCase()}</option>
+                                <option key={stage.key} value={stage.key}>
+                                    {getStatusLabel(stage.key, negocioActivo?.rubro).toUpperCase()}
+                                </option>
                             ))}
                         </select>
-                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400 pointer-events-none" />
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none group-hover:text-zinc-600 transition-colors" />
                     </div>
                 </div>
 
                 <div className="lg:col-span-2 space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">Prioridad</label>
-                    <div className="relative">
+                    <div className="relative group">
                         <select
-                            className="w-full h-12 rounded-2xl border border-zinc-100 bg-white dark:bg-zinc-900 dark:border-zinc-800 px-4 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/10 appearance-none transition-all"
+                            className="w-full h-12 rounded-2xl border-none bg-zinc-50/50 dark:bg-zinc-950/50 px-4 pr-10 text-[11px] font-bold focus:ring-2 focus:ring-primary/10 appearance-none transition-all cursor-pointer"
                             value={urgenciaFilter}
                             onChange={(e) => setUrgenciaFilter(e.target.value)}
                         >
-                            <option value="all" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">TODAS</option>
-                            <option value="VENCIDO" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">VENCIDO</option>
-                            <option value="PRÓXIMO" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">PRÓXIMO</option>
-                            <option value="EN TIEMPO" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">EN TIEMPO</option>
-                            <option value="LISTO" className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">LISTO</option>
+                            <option value="all">TODAS</option>
+                            <option value="VENCIDO">VENCIDO</option>
+                            <option value="PRÓXIMO">PRÓXIMO</option>
+                            <option value="EN TIEMPO">EN TIEMPO</option>
+                            <option value="LISTO">LISTO</option>
                         </select>
-                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400 pointer-events-none" />
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none group-hover:text-zinc-600 transition-colors" />
                     </div>
                 </div>
             </div>
@@ -224,16 +236,16 @@ export default function OrdersPage() {
                 )}
             </div>
 
-            {(estadoFilter === 'all' || estadoFilter === 'DELIVERED') && deliveredOrders.length > 0 && (
+            {(estadoFilter === 'all' || estadoFilter === 'DELIVERED' || estadoFilter === 'CANCELLED') && archivedOrders.length > 0 && (
                 <div className="pt-8 space-y-6">
                     <div className="flex items-center gap-4">
                         <div className="h-[1px] flex-1 bg-zinc-200 dark:bg-zinc-800" />
-                        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Historial de Pedidos Entregados</h2>
+                        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Historial de Pedidos (Entregados / Anulados)</h2>
                         <div className="h-[1px] flex-1 bg-zinc-200 dark:bg-zinc-800" />
                     </div>
 
                     <OrdersTable
-                        orders={deliveredOrders}
+                        orders={archivedOrders}
                         getClientName={getClientName}
                         sortKey={sortKey}
                         sortDir={sortDir}

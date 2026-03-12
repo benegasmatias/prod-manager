@@ -6,17 +6,22 @@ import { useNegocio } from '@/src/context/NegocioContext'
 import { api } from '@/src/lib/api'
 
 export function BusinessGuard({ children }: { children: React.ReactNode }) {
-    const { negocios, negocioActivoId, setActivo, isInitialized } = useNegocio()
+    const { negocios, negocioActivoId, user, setActivo, isInitialized } = useNegocio()
     const router = useRouter()
     const pathname = usePathname()
     const [isChecking, setIsChecking] = useState(true)
 
     // Referencia para evitar verificaciones redundantes si nada crítico cambió
     const verificationRef = useRef<string>('')
+    const isNavigatingRef = useRef<boolean>(false)
 
     useEffect(() => {
+        // Reset navigation flag when location changes
+        isNavigatingRef.current = false
+
         // 1. Excluir rutas públicas
-        if (pathname === '/login' || pathname === '/register') {
+        const publicPaths = ['/login', '/register', '/auth/callback', '/auth/auth-code-error']
+        if (publicPaths.includes(pathname)) {
             setIsChecking(false)
             return
         }
@@ -25,44 +30,73 @@ export function BusinessGuard({ children }: { children: React.ReactNode }) {
         if (!isInitialized) return
 
         const verify = async () => {
-            const currentCheck = `${pathname}-${negocioActivoId}-${negocios.length}`
+            // El BusinessGuard ahora solo se encarga de asegurar que haya un negocio seleccionado.
+            // La autenticación (redirección al login) la maneja exclusivamente el proxy.ts (middleware).
+
+            const currentCheck = `${pathname}-${negocioActivoId}-${negocios.length}-${user?.id}`
             if (verificationRef.current === currentCheck) {
                 setIsChecking(false)
                 return
             }
 
             try {
-                // Si el negocio activo es válido dentro de la lista actual, todo okay
-                const isValid = negocioActivoId && negocios.some(b => b.id === negocioActivoId)
-
-                // BLOQUEO A: Si ya tiene negocio válido, no puede estar en /select-business
-                if (isValid && pathname === '/select-business') {
-                    router.replace('/dashboard')
+                // REDIRECCIÓN CRÍTICA: Si no hay usuario y no es una ruta pública, ir al login
+                if (!user && isInitialized) {
+                    if (isNavigatingRef.current) return
+                    isNavigatingRef.current = true
+                    const next = encodeURIComponent(pathname + window.location.search)
+                    router.replace(`/login?next=${next}`)
                     return
                 }
 
+                // Si aún no tenemos negocios cargados pero estamos inicializados, 
+                // esperamos un instante por si el onAuthStateChange está en proceso.
+                if (isInitialized && user && negocios.length === 0 && pathname !== '/select-business') {
+                    // Si no hay negocios tras login, forzar ir a selección
+                    if (isNavigatingRef.current) return
+                    isNavigatingRef.current = true
+                    router.replace('/select-business')
+                    return
+                }
+
+                // Si el negocio activo es válido dentro de la lista actual, todo okay
+                const isValid = negocioActivoId && negocios.some(b => b.id === negocioActivoId)
+
+                // BLOQUEO A: Si ya tiene negocio válido, no forzar salida de /select-business
+                // Esto permite que el usuario entre voluntariamente a cambiar de negocio.
+                /*
+                if (isValid && pathname === '/select-business') {
+                    if (isNavigatingRef.current) return
+                    isNavigatingRef.current = true
+                    router.replace('/dashboard')
+                    return
+                }
+                */
+
                 // BLOQUEO B: Si NO tiene ningún negocio válido y NO está en /select-business, forzar selección
-                if (!isValid && pathname !== '/select-business') {
-                    // Solo redirigimos si realmente no hay nada. Si hay negocios pero no activo,
-                    // NegocioContext ya debería haber intentado poner uno.
-                    if (negocios.length > 0) {
-                        setActivo(negocios[0].id)
-                    } else {
-                        router.replace('/select-business')
-                        return
-                    }
+                if (user && !isValid && pathname !== '/select-business' && negocios.length > 0) {
+                    // Intentar poner el primero si hay
+                    setActivo(negocios[0].id)
+                } else if (user && !isValid && pathname !== '/select-business' && isInitialized) {
+                    // Si realmente no hay negocios, ir a crear/seleccionar
+                    if (isNavigatingRef.current) return
+                    isNavigatingRef.current = true
+                    router.replace('/select-business')
+                    return
                 }
 
                 verificationRef.current = currentCheck
                 setIsChecking(false)
+                console.log('[BusinessGuard] Verificación completa, permitiendo render.');
             } catch (err) {
                 console.error('[BusinessGuard] Error:', err)
                 setIsChecking(false)
             }
         }
 
+        console.log('[BusinessGuard] Disparando verificación...', { pathname, isInitialized, hasUser: !!user });
         verify()
-    }, [pathname, isInitialized, negocioActivoId, negocios.length, setActivo, router])
+    }, [pathname, isInitialized, negocioActivoId, negocios.length, user, setActivo, router])
 
     if (!isInitialized || (isChecking && pathname !== '/select-business')) {
         return (

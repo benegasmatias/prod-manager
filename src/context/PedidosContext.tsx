@@ -127,22 +127,31 @@ export function PedidosProvider({ children }: { children: React.ReactNode }) {
 
     const addPedido = async (negocioId: string, data: Partial<Pedido>) => {
         try {
+            // Definir prioridad numérica para el backend (1-4)
+            const priorityMap: Record<string, number> = {
+                'VENCIDO': 4,
+                'PRÓXIMO': 3,
+                'EN TIEMPO': 2,
+                'LISTO': 1
+            };
+
             await api.orders.create({
                 businessId: negocioId,
                 customerId: data.clienteId,
                 clientName: data.clientName,
                 totalPrice: data.total,
-                status: data.estado || 'PENDING',
                 dueDate: data.fechaEntrega,
+                priority: priorityMap[data.urgencia || 'EN TIEMPO'] || 2,
                 notes: data.observaciones,
                 type: data.type,
                 items: data.items?.map(i => {
                     const mappedItem: any = {
                         name: i.nombreProducto,
                         description: i.descripcion,
-                        stlUrl: i.urlStl,
-                        estimatedMinutes: Number(i.duracionEstimadaMinutos || 0),
-                        weightGrams: Number(i.pesoGramos || 0),
+                        // Mapeo preciso de nombres de campos según PedidosContext.tsx y OrderForm
+                        stlUrl: (i as any).url_stl || (i as any).urlStl,
+                        estimatedMinutes: Number((i as any).duracionEstimadaMinutos || (i as any).duracion_estimada_minutos || 0),
+                        weightGrams: Number((i as any).pesoGramos || (i as any).peso_gramos || 0),
                         price: Number(i.precioUnitario || 0),
                         qty: Number(i.cantidad || 1),
                         deposit: Number(i.senia || 0),
@@ -153,7 +162,8 @@ export function PedidosProvider({ children }: { children: React.ReactNode }) {
                         'id', 'nombreProducto', 'descripcion', 'url_stl', 'urlStl',
                         'duracion_estimada_minutos', 'duracionEstimadaMinutos',
                         'demora_estimada_minutos', 'peso_gramos', 'pesoGramos',
-                        'precioUnitario', 'cantidad', 'senia', 'metadata'
+                        'precioUnitario', 'cantidad', 'senia', 'metadata',
+                        'stlUrl', 'weightGrams', 'estimatedMinutes', 'name', 'price', 'qty', 'deposit'
                     ];
 
                     Object.keys(i).forEach(key => {

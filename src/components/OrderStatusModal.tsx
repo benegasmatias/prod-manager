@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { api } from '@/src/lib/api'
 import { toast } from 'react-hot-toast'
+import { getStatusLabel, getStatusStyles } from '@/src/domain/negocio'
 
 interface OrderStatusModalProps {
     order: Pedido | null
@@ -32,12 +33,15 @@ interface OrderStatusModalProps {
 }
 
 export function OrderStatusModal({ order, isOpen, onClose, employees, defaultFailureMode }: OrderStatusModalProps) {
-    const { config, user: profile } = useNegocio()
+    const { config, user: profile, negocioActivo } = useNegocio()
     const { updatePedido, registerPayment, refresh } = usePedidos()
 
     const allStages = config.productionStages
-    const is3D = config.labels.produccion.includes('Impresión')
+    const is3D = negocioActivo?.rubro === 'IMPRESION_3D'
     const stages = allStages.filter(s => {
+        // PERMITIR siempre el estado actual para que se resalte correctamente
+        if (order?.estado === s.key) return true;
+
         if (s.key === 'FAILED') return false
         if (is3D && s.key === 'REPRINT_PENDING') return false
 
@@ -286,18 +290,7 @@ export function OrderStatusModal({ order, isOpen, onClose, employees, defaultFai
                                 <div className="grid grid-cols-2 gap-2.5">
                                     {stages.map((stage) => {
                                         const isSelected = status === stage.key
-                                        const baseColor = stage.color.split('-')[1]
-
-                                        // Estilos consistentes con getStatusStyles de la página principal
-                                        let activeStyles = `bg-${baseColor}-50/50 border-${baseColor}-200 dark:bg-${baseColor}-950/20 dark:border-${baseColor}-900/50`
-                                        let textActive = `text-${baseColor}-700 dark:text-${baseColor}-400`
-                                        let bulletActive = `bg-${baseColor}-500 scale-125 shadow-[0_0_8px_rgba(0,0,0,0.3)]`
-
-                                        if (baseColor === 'zinc') {
-                                            activeStyles = 'bg-zinc-100 border-zinc-200 dark:bg-zinc-800/50 dark:border-zinc-700'
-                                            textActive = 'text-zinc-900 dark:text-zinc-100'
-                                            bulletActive = 'bg-zinc-400 scale-125'
-                                        }
+                                        const styles = getStatusStyles(stage.key, negocioActivo?.rubro);
 
                                         return (
                                             <button
@@ -306,22 +299,22 @@ export function OrderStatusModal({ order, isOpen, onClose, employees, defaultFai
                                                 className={cn(
                                                     "flex flex-col gap-1 px-4 py-3.5 rounded-[1.25rem] border transition-all text-left relative group overflow-hidden",
                                                     isSelected
-                                                        ? activeStyles
+                                                        ? styles
                                                         : "bg-white dark:bg-zinc-900 border-zinc-100 dark:border-zinc-800 hover:border-zinc-200"
                                                 )}
                                             >
                                                 <div className="flex items-center gap-2">
                                                     <div className={cn(
                                                         "h-1.5 w-1.5 rounded-full transition-all duration-300",
-                                                        isSelected ? bulletActive : "bg-zinc-300"
+                                                        isSelected ? "bg-primary scale-125" : "bg-zinc-300"
                                                     )} />
                                                     <span className={cn(
                                                         "text-[12px] font-black uppercase tracking-tight",
-                                                        isSelected ? textActive : "text-zinc-500"
-                                                    )}>{stage.label}</span>
+                                                        isSelected ? "text-primary" : "text-zinc-500"
+                                                    )}>{getStatusLabel(stage.key, negocioActivo?.rubro)}</span>
                                                 </div>
                                                 {isSelected && (
-                                                    <div className={cn(`absolute -right-2 -bottom-2 opacity-5 scale-150 rotate-12 transition-all duration-700`, isSelected && (baseColor === 'zinc' ? 'text-zinc-900' : `text-${baseColor}-600`))}>
+                                                    <div className="absolute -right-2 -bottom-2 opacity-5 scale-150 rotate-12 transition-all duration-700 text-primary">
                                                         <CheckCircle2 size={40} />
                                                     </div>
                                                 )}

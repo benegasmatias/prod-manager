@@ -21,7 +21,7 @@ interface OrderFormProps {
 
 export function OrderForm({ forcedType, cloneId }: OrderFormProps) {
     const router = useRouter()
-    const { negocioActivoId, config, user: profile } = useNegocio()
+    const { negocioActivoId, config, user: profile, negocioActivo } = useNegocio()
     const { addPedido, pedidos } = usePedidos()
     const { clientes, loading: loadingClientes } = useClientes()
 
@@ -131,8 +131,25 @@ export function OrderForm({ forcedType, cloneId }: OrderFormProps) {
 
         for (let i = 0; i < items.length; i++) {
             const el = items[i]
-            if (!el.nombreProducto) return `El ítem ${i + 1} debe tener nombre`
-            if (config.labels.produccion.includes('Impresión') && !(el as any).material_id) return `El ítem ${i + 1} debe tener un material asignado`
+
+            // Validaciones dinámicas basadas en la configuración del rubro
+            for (const field of config.itemFields) {
+                // Si el campo tiene visibilidad condicional y no debería ser visible, saltar validación
+                if (field.visibleIf) {
+                    const dependentValue = (el as any)[field.visibleIf.key];
+                    if (!field.visibleIf.values.includes(dependentValue)) continue;
+                }
+
+                if (field.required && !el[field.key as keyof typeof el]) {
+                    // Caso especial: si se diseña STL, la URL no es obligatoria aunque lo diga el config
+                    if (field.key === 'url_stl' && (el as any).seDiseñaSTL) continue;
+                    // Caso especial: si NO se diseña STL, el precio de diseño no es obligatorio
+                    if (field.key === 'precioDiseno' && !(el as any).seDiseñaSTL) continue;
+
+                    return `El ítem ${i + 1} debe tener: ${field.label}`
+                }
+            }
+
             if ((el.cantidad || 0) < 1) return `La cantidad del ítem ${i + 1} debe ser mayor a 0`
             if (orderType === 'CUSTOMER' && (el.precioUnitario || 0) < 0) return `El precio del ítem ${i + 1} no puede ser negativo`
 
@@ -188,20 +205,31 @@ export function OrderForm({ forcedType, cloneId }: OrderFormProps) {
     }
 
     return (
-        <form onSubmit={handleSave} className="space-y-6 pb-24 lg:pb-6 relative max-w-4xl mx-auto">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Button type="button" variant="outline" size="icon" onClick={() => router.back()} className="rounded-xl">
-                        <ArrowLeft className="h-4 w-4" />
+        <form onSubmit={handleSave} className="space-y-10 pb-24 lg:pb-12 relative max-w-5xl mx-auto">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-4">
+                <div className="flex items-start gap-5">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => router.back()}
+                        className="h-12 w-12 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 shadow-sm hover:bg-zinc-50 transition-all active:scale-95"
+                    >
+                        <ArrowLeft className="h-5 w-5" />
                     </Button>
-                    <div>
-                        <h1 className="text-2xl sm:text-3xl font-black tracking-tight uppercase">
-                            {orderType === 'CUSTOMER' ? 'Nuevo Pedido' : 'Producción de Stock'}
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2 mb-1">
+                            <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                            <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Carga de Registro</span>
+                        </div>
+                        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                            {orderType === 'CUSTOMER' ? 'Nuevo' : 'Producción de'} <span className="text-primary italic">{orderType === 'CUSTOMER' ? 'Pedido' : 'Stock'}</span>
                         </h1>
-                        <p className="text-xs sm:text-sm text-zinc-500 font-medium italic">
+                        <p className="text-sm font-medium text-zinc-500 leading-relaxed">
                             {orderType === 'CUSTOMER'
-                                ? 'Carga un nuevo pedido por encargo para un cliente.'
-                                : 'Generá una orden de fabricación interna para inventario.'}
+                                ? 'Ingresá los detalles del pedido personalizado para tu cliente.'
+                                : 'Generá una orden interna para fabricar unidades y reponer tu depósito.'}
                         </p>
                     </div>
                 </div>
@@ -312,15 +340,15 @@ export function OrderForm({ forcedType, cloneId }: OrderFormProps) {
 
                             return (
                                 <div key={idx} className="group relative overflow-hidden bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2.5rem] shadow-sm transition-all hover:shadow-xl hover:shadow-zinc-200/50 dark:hover:shadow-none">
-                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-zinc-900 dark:bg-zinc-100 opacity-20 group-hover:opacity-100 transition-opacity" />
+                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-primary opacity-20 group-hover:opacity-100 transition-opacity" />
 
                                     <div className="p-8 space-y-8">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className="h-8 w-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xs font-black">
+                                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
                                                     {idx + 1}
                                                 </div>
-                                                <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400">Parámetros del Ítem</h3>
+                                                <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400">Detalles del Ítem</h3>
                                             </div>
                                             {items.length > 1 && (
                                                 <Button type="button" variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors" onClick={() => removeItem(idx)}>
@@ -340,7 +368,13 @@ export function OrderForm({ forcedType, cloneId }: OrderFormProps) {
                                                     </h4>
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                                         {sectionFields.map(f => {
-                                                            const is3D = config.labels.produccion.includes('Impresión');
+                                                            // Lógica de visibilidad condicional
+                                                            if (f.visibleIf) {
+                                                                const dependentValue = (item as any)[f.visibleIf.key];
+                                                                if (!f.visibleIf.values.includes(dependentValue)) return null;
+                                                            }
+
+                                                            const is3D = negocioActivo?.rubro === 'IMPRESION_3D';
                                                             if (is3D) {
                                                                 if (f.key === 'url_stl' && (item as any).seDiseñaSTL) return null;
                                                                 if (f.key === 'precioDiseno' && !(item as any).seDiseñaSTL) return null;
@@ -379,17 +413,17 @@ export function OrderForm({ forcedType, cloneId }: OrderFormProps) {
                                                                             className={cn(
                                                                                 "flex items-center gap-3 h-11 w-full rounded-xl border px-4 transition-all duration-200",
                                                                                 (item as any)[f.key]
-                                                                                    ? "bg-zinc-900 border-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-lg shadow-zinc-900/10"
-                                                                                    : "bg-white border-zinc-200 text-zinc-400 dark:bg-zinc-950/20 dark:border-zinc-800"
+                                                                                    ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20"
+                                                                                    : "bg-white border-zinc-200 text-zinc-400 dark:bg-zinc-950/20 dark:border-zinc-800 shadow-sm"
                                                                             )}
                                                                         >
                                                                             <div className={cn(
                                                                                 "h-5 w-9 rounded-full p-1 transition-colors flex items-center",
-                                                                                (item as any)[f.key] ? "bg-white/20 dark:bg-black/10" : "bg-zinc-100 dark:bg-zinc-800"
+                                                                                (item as any)[f.key] ? "bg-white/30" : "bg-zinc-100 dark:bg-zinc-800"
                                                                             )}>
                                                                                 <div className={cn(
                                                                                     "h-3 w-3 rounded-full transition-transform duration-200",
-                                                                                    (item as any)[f.key] ? "translate-x-4 bg-white dark:bg-zinc-900" : "translate-x-0 bg-zinc-300 dark:bg-zinc-600"
+                                                                                    (item as any)[f.key] ? "translate-x-4 bg-white" : "translate-x-0 bg-zinc-300 dark:bg-zinc-600"
                                                                                 )} />
                                                                             </div>
                                                                             <span className="text-[10px] font-black uppercase tracking-[0.15em]">
@@ -463,13 +497,20 @@ export function OrderForm({ forcedType, cloneId }: OrderFormProps) {
 
                                                             {/* Sugerencia de precio para 3D */}
                                                             {(() => {
-                                                                const is3D = config.labels.produccion.includes('Impresión');
+                                                                const is3D = negocioActivo?.rubro === 'IMPRESION_3D';
                                                                 const peso = (item as any).peso_gramos;
-                                                                const matId = (item as any).material_id;
-                                                                if (is3D && peso && matId) {
-                                                                    const mat = materials.find(m => m.id === matId);
-                                                                    if (mat && mat.costPerKg > 0) {
-                                                                        const suggested = (mat.costPerKg / 1000) * peso * 3;
+                                                                const tipoFilamento = (item as any).tipo_filamento;
+
+                                                                if (is3D && peso && tipoFilamento) {
+                                                                    let costPerKg = 0;
+                                                                    // Buscar costo promedio por tipo
+                                                                    const sameType = materials.filter(m => m.type === tipoFilamento && m.costPerKg > 0);
+                                                                    if (sameType.length > 0) {
+                                                                        costPerKg = sameType.reduce((acc, m) => acc + m.costPerKg, 0) / sameType.length;
+                                                                    }
+
+                                                                    if (costPerKg > 0) {
+                                                                        const suggested = (costPerKg / 1000) * peso * 3;
                                                                         return (
                                                                             <div className="absolute -top-12 left-0 right-0 animate-in fade-in slide-in-from-bottom-2">
                                                                                 <button
@@ -502,8 +543,8 @@ export function OrderForm({ forcedType, cloneId }: OrderFormProps) {
                                                         </div>
                                                     </div>
                                                     <div className="space-y-3">
-                                                        <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Carga Final Ítem</Label>
-                                                        <div className="h-14 w-full rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 flex items-center justify-center font-black text-2xl shadow-xl shadow-zinc-900/10">
+                                                        <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1 font-mono">Carga Final Ítem</Label>
+                                                        <div className="h-14 w-full rounded-2xl bg-white dark:bg-zinc-900 border-2 border-primary/20 text-primary flex items-center justify-center font-black text-2xl shadow-sm">
                                                             {formatARS(((item.cantidad || 0) * (item.precioUnitario || 0)) + ((item as any).seDiseñaSTL ? (Number((item as any).precioDiseno) || 0) * (item.cantidad || 1) : 0))}
                                                         </div>
                                                     </div>
@@ -524,13 +565,19 @@ export function OrderForm({ forcedType, cloneId }: OrderFormProps) {
                                                                     className="h-14 pl-10 rounded-2xl bg-white dark:bg-zinc-900 border-purple-100 dark:border-purple-900/30 font-black text-xl text-purple-700 dark:text-purple-400"
                                                                 />
                                                                 {(() => {
-                                                                    const is3D = config.labels.produccion.includes('Impresión');
+                                                                    const is3D = negocioActivo?.rubro === 'IMPRESION_3D';
                                                                     const peso = (item as any).peso_gramos;
-                                                                    const matId = (item as any).material_id;
-                                                                    if (is3D && peso && matId) {
-                                                                        const mat = materials.find(m => m.id === matId);
-                                                                        if (mat && mat.costPerKg > 0) {
-                                                                            const suggested = (mat.costPerKg / 1000) * peso;
+                                                                    const tipoFilamento = (item as any).tipo_filamento;
+
+                                                                    if (is3D && peso && tipoFilamento) {
+                                                                        let costPerKg = 0;
+                                                                        const sameType = materials.filter(m => m.type === tipoFilamento && m.costPerKg > 0);
+                                                                        if (sameType.length > 0) {
+                                                                            costPerKg = sameType.reduce((acc, m) => acc + m.costPerKg, 0) / sameType.length;
+                                                                        }
+
+                                                                        if (costPerKg > 0) {
+                                                                            const suggested = (costPerKg / 1000) * peso;
                                                                             return (
                                                                                 <div className="absolute -top-12 left-0 right-0 animate-in fade-in slide-in-from-bottom-2">
                                                                                     <button
@@ -577,9 +624,9 @@ export function OrderForm({ forcedType, cloneId }: OrderFormProps) {
                                                                 {formatARS(((item as any).estimatedSaleUnitPrice || 0) * (item.cantidad || 0))}
                                                             </span>
                                                         </div>
-                                                        <div className="p-4 rounded-2xl bg-zinc-900 dark:bg-white border border-transparent shadow-lg shadow-zinc-900/10">
-                                                            <span className="block text-[9px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-1">Ganancia Est.</span>
-                                                            <span className="text-lg font-black text-white dark:text-zinc-900">
+                                                        <div className="p-5 rounded-2xl bg-gradient-to-br from-primary to-primary/80 dark:from-primary/20 dark:to-primary/10 text-primary-foreground dark:text-primary border border-transparent dark:border-primary/20 shadow-lg shadow-primary/20 dark:shadow-none">
+                                                            <span className="block text-[9px] font-black uppercase tracking-[0.2em] mb-1 opacity-70 dark:text-primary/70">Ganancia Est.</span>
+                                                            <span className="text-xl font-bold tracking-tight">
                                                                 {formatARS((((item as any).estimatedSaleUnitPrice || 0) - ((item as any).estimatedUnitCost || 0)) * (item.cantidad || 0))}
                                                             </span>
                                                         </div>
@@ -596,7 +643,7 @@ export function OrderForm({ forcedType, cloneId }: OrderFormProps) {
 
                 <div className="lg:col-span-1">
                     <div className="sticky top-6 space-y-6">
-                        <div className="rounded-[2.5rem] border border-zinc-100 bg-white p-8 dark:border-zinc-800 dark:bg-zinc-950 shadow-xl shadow-zinc-200/50">
+                        <div className="rounded-[2.5rem] border border-zinc-100 bg-white p-8 dark:border-zinc-800 dark:bg-zinc-950 shadow-xl shadow-zinc-200/50 dark:shadow-none">
                             <h2 className="text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400 mb-8 border-b border-zinc-50 dark:border-zinc-900 pb-4">Cierre de Orden</h2>
 
                             <div className="space-y-6">
@@ -635,30 +682,30 @@ export function OrderForm({ forcedType, cloneId }: OrderFormProps) {
                                     </>
                                 ) : (
                                     <div className="space-y-6">
-                                        <div className="flex justify-between text-purple-600/80 font-bold items-center pt-2 border-t border-zinc-50 dark:border-zinc-900 mt-2">
+                                        <div className="flex justify-between text-purple-600 dark:text-purple-400 font-bold items-center pt-2 border-t border-zinc-50 dark:border-zinc-900 mt-2">
                                             <span className="text-[10px] uppercase tracking-widest">Inversión Estimada</span>
                                             <span className="text-lg tabular-nums">{formatARS(totales.totalCostoEstimado)}</span>
                                         </div>
-                                        <div className="flex justify-between text-emerald-600/80 font-bold items-center">
+                                        <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-bold items-center">
                                             <span className="text-[10px] uppercase tracking-widest">Venta Proyectada</span>
                                             <span className="text-lg tabular-nums">{formatARS(totales.totalVentaEstimada)}</span>
                                         </div>
-                                        <div className="p-6 rounded-3xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 mt-4 shadow-xl shadow-zinc-200 dark:shadow-none">
-                                            <span className="block text-[9px] font-black uppercase tracking-[0.3em] opacity-60 mb-2">Margen Neto Estimado</span>
-                                            <span className={cn("text-3xl font-black tabular-nums tracking-tighter", totalProfit >= 0 ? "text-emerald-400 dark:text-emerald-600" : "text-rose-400 dark:text-rose-600")}>
+                                        <div className="p-6 rounded-3xl bg-gradient-to-br from-primary to-primary/80 dark:from-primary/20 dark:to-primary/10 text-primary-foreground dark:text-primary mt-4 shadow-xl shadow-primary/20 dark:shadow-none border border-transparent dark:border-primary/20">
+                                            <span className="block text-[9px] font-bold uppercase tracking-[0.3em] opacity-80 mb-2">Margen Neto Estimado</span>
+                                            <span className={cn("text-3xl font-bold tabular-nums tracking-tighter")}>
                                                 {formatARS(totalProfit)}
                                             </span>
                                         </div>
                                     </div>
                                 )}
 
-                                <Button type="submit" className="w-full h-14 rounded-2xl text-md font-black uppercase tracking-widest mt-8 shadow-2xl shadow-primary/20 gap-3" disabled={isLoading}>
+                                <Button type="submit" className="w-full h-14 rounded-2xl text-md font-bold uppercase tracking-widest mt-8 shadow-2xl shadow-primary/20 gap-3 bg-gradient-to-r from-primary to-primary/90 hover:opacity-90 transition-all active:scale-[0.98]" disabled={isLoading}>
                                     {isLoading ? (
                                         <span className="animate-spin text-xl text-white">⏳</span>
                                     ) : (
                                         <>
                                             <Save className="h-5 w-5" />
-                                            {orderType === 'CUSTOMER' ? 'Guardar Pedido' : 'Iniciar Producción'}
+                                            {orderType === 'CUSTOMER' ? 'Confirmar Pedido' : 'Enviar a Producción'}
                                         </>
                                     )}
                                 </Button>

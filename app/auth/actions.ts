@@ -31,6 +31,7 @@ export async function signup(formData: FormData) {
     const confirmPassword = formData.get('confirmPassword') as string
     const firstName = formData.get('firstName') as string
     const lastName = formData.get('lastName') as string
+    const phone = formData.get('phone') as string
 
     if (password !== confirmPassword) {
         return { error: 'Las contraseñas no coinciden' }
@@ -44,6 +45,7 @@ export async function signup(formData: FormData) {
                 full_name: `${firstName} ${lastName}`.trim(),
                 first_name: firstName,
                 last_name: lastName,
+                phone: phone,
             }
         }
     })
@@ -80,4 +82,40 @@ export async function logout() {
 
     revalidatePath('/', 'layout')
     redirect('/login')
+}
+
+export async function resetPassword(formData: FormData) {
+    const supabase = await createClient()
+    const email = formData.get('email') as string
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback?next=/auth/reset-password`,
+    })
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    return { success: 'Se ha enviado un correo con instrucciones para restablecer tu contraseña.' }
+}
+
+export async function updatePassword(formData: FormData) {
+    const supabase = await createClient()
+    const password = formData.get('password') as string
+    const confirmPassword = formData.get('confirmPassword') as string
+
+    if (!password || password !== confirmPassword) {
+        return { error: 'Las contraseñas no coinciden' }
+    }
+
+    const { error } = await supabase.auth.updateUser({
+        password: password,
+    })
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    revalidatePath('/', 'layout')
+    return { success: 'Contraseña actualizada correctamente.' }
 }

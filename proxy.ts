@@ -40,26 +40,24 @@ export default async function proxy(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
-    const isAuthPage = request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register'
-    const isDashboardPage = request.nextUrl.pathname.startsWith('/dashboard')
+    const publicPaths = ['/login', '/register', '/forgot-password', '/auth/reset-password', '/auth/callback', '/auth/auth-code-error']
+    const isPublicPage = publicPaths.includes(request.nextUrl.pathname)
 
-    // Redirect to dashboard if logged in and trying to access auth pages
-    if (user && isAuthPage) {
+    // Redirect to dashboard if logged in and trying to access auth pages (except reset-password)
+    const authPages = ['/login', '/register']
+    if (user && authPages.includes(request.nextUrl.pathname)) {
         return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
     // Redirect to login if not logged in and trying to access protected pages
-    if (!user && isDashboardPage) {
-        return NextResponse.redirect(new URL('/login', request.url))
+    if (!user && !isPublicPage) {
+        const next = encodeURIComponent(request.nextUrl.pathname + request.nextUrl.search)
+        return NextResponse.redirect(new URL(`/login?next=${next}`, request.url))
     }
 
-    // Redirect root to dashboard or login
+    // Redirect root to dashboard (if already authenticated)
     if (request.nextUrl.pathname === '/') {
-        if (user) {
-            return NextResponse.redirect(new URL('/dashboard', request.url))
-        } else {
-            return NextResponse.redirect(new URL('/login', request.url))
-        }
+        return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
     return supabaseResponse

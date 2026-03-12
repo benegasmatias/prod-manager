@@ -242,6 +242,44 @@ IN_PROGRESS -> En producción
 READY -> Listo  
 DELIVERED -> Entregado  
 CANCELLED -> Cancelado
-
+    
 Important:
 The internal code (variables, enums, database) may remain in English, but the UI must always be Spanish.
+
+## AUTENTICACIÓN Y SESIÓN
+
+El sistema utiliza Supabase Auth para autenticación, con un **AuthProvider** centralizado.
+
+### AuthProvider (`src/context/AuthContext.tsx`)
+
+- Provee el contexto de autenticación global a toda la app.
+- Se inicializa una sola vez al montar la aplicación.
+- Escucha cambios de estado de auth (login, logout, token refresh) vía `onAuthStateChange`.
+- Expone: `user`, `session`, `loading`, `signOut`.
+
+### Hook `useAuth` (`hooks/useAuth.ts`)
+
+- Es el punto de acceso para cualquier componente que necesite datos de sesión.
+- Internamente consume `useAuthContext()` del provider.
+- Uso: `const { user, loading, signOut } = useAuth()`
+
+### Flujo de autenticación
+
+- **Login**: `/login` → `login()` server action → redirect a `/dashboard`
+- **Registro**: `/register` → `signup()` server action → éxito/error
+- **Recuperación**: `/forgot-password` → `resetPassword()` → email → `/auth/callback?next=/auth/reset-password` → `updatePassword()`
+- **Google OAuth**: `signInWithGoogle()` → redirect a Google → `/auth/callback` → `/dashboard`
+
+### Proxy/Middleware (`proxy.ts`)
+
+- Rutas públicas: `/login`, `/register`, `/forgot-password`, `/auth/reset-password`, `/auth/callback`, `/auth/auth-code-error`
+- Usuarios autenticados en `/login` o `/register` son redirigidos a `/dashboard`.
+- Usuarios no autenticados en rutas protegidas son redirigidos a `/login`.
+- `/auth/reset-password` NO redirige al dashboard aunque el usuario esté autenticado (necesario para el flujo de cambio de contraseña).
+
+### Reglas de uso
+
+- NO crear instancias separadas de Supabase auth en componentes individuales.
+- SIEMPRE usar `useAuth()` para acceder a datos de sesión.
+- NO hacer `getSession()` o `getUser()` directamente desde componentes, usar el provider.
+- El `AuthProvider` es el primer provider en el layout (después de `ThemeProvider`) para que todos los demás contextos puedan consumir auth si lo necesitan.

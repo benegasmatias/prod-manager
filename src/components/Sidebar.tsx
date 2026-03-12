@@ -204,17 +204,22 @@ export function SidebarContent({ onItemClick, isCollapsed = false }: { onItemCli
 
             {!isCollapsed && (
                 <div className="mt-auto pt-6 border-t border-zinc-100 dark:border-zinc-800/50">
-                    <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 p-4 border border-zinc-100 dark:border-zinc-800/50">
+                    <a
+                        href="https://wa.me/5491100000000?text=Hola!%20Necesito%20ayuda%20con%20ProdManager"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 p-4 border border-zinc-100 dark:border-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800 hover:shadow-xl hover:shadow-zinc-500/5 hover:-translate-y-1 transition-all duration-300 group"
+                    >
                         <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                <HelpCircle className="h-4 w-4 text-primary" />
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+                                <HelpCircle className="h-4 w-4 text-primary group-hover:text-white transition-colors" />
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">Ayuda</span>
-                                <span className="text-[10px] text-zinc-500">Documentación</span>
+                                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">Ayuda y Soporte</span>
+                                <span className="text-[10px] text-zinc-500">Contactar vía WhatsApp</span>
                             </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
             )}
         </div>

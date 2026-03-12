@@ -1,5 +1,5 @@
 import { Machine } from '@/src/types'
-import { Badge } from '@/src/components/ui/badge'
+import { Button } from '@/src/components/ui/button'
 import * as Icons from 'lucide-react'
 import { cn } from '@/src/lib/utils'
 
@@ -16,7 +16,7 @@ export function MachineGrid({ machines, onAssign, onRelease, onDetail, isSubmitt
     const IconComponent = (Icons as any)[iconName] || Icons.Cpu
 
     return (
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {machines.map((machine) => {
                 const isOcupada = machine.status === 'Ocupada' || machine.status === 'PRINTING'
                 const isMantenimiento = machine.status === 'Mantenimiento' || machine.status === 'MAINTENANCE'
@@ -24,89 +24,99 @@ export function MachineGrid({ machines, onAssign, onRelease, onDetail, isSubmitt
 
                 return (
                     <div key={machine.id} className={cn(
-                        "group relative overflow-hidden bg-white dark:bg-zinc-900/40 border border-zinc-100 dark:border-zinc-800/50 rounded-[2.5rem] p-8 transition-all hover:shadow-2xl hover:shadow-primary/5",
-                        isMantenimiento && "opacity-80 grayscale-[0.5]"
+                        "group relative overflow-hidden bg-white dark:bg-zinc-900/40 border border-zinc-100 dark:border-zinc-800/50 rounded-[2.5rem] p-8 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 animate-slide-up",
+                        isMantenimiento && "opacity-75 grayscale-[0.3]"
                     )}>
-                        <div className="flex items-start justify-between mb-8">
-                            <div className="space-y-1">
+                        <div className="flex items-start justify-between mb-6">
+                            <div className="space-y-1.5">
                                 <div className="flex items-center gap-2">
                                     <div className={cn(
-                                        "h-2 w-2 rounded-full animate-pulse",
+                                        "h-1.5 w-1.5 rounded-full",
                                         isOcupada ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" :
                                             isMantenimiento ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" :
-                                                "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                                                "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse"
                                     )} />
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                                        {isOcupada ? 'Ocupada' : isMantenimiento ? 'Mantenimiento' : 'Libre'}
+                                    <span className={cn(
+                                        "text-[10px] font-bold uppercase tracking-wider",
+                                        isOcupada ? "text-amber-600 dark:text-amber-400" :
+                                            isMantenimiento ? "text-rose-600 dark:text-rose-400" :
+                                                "text-emerald-600 dark:text-emerald-400"
+                                    )}>
+                                        {isOcupada ? 'Producción' : isMantenimiento ? 'Mantenimiento' : 'Libre / Operativa'}
                                     </span>
                                 </div>
-                                <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">{machine.name}</h3>
+                                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">{machine.name}</h3>
                             </div>
-                            <div className="h-12 w-12 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800/50 flex items-center justify-center text-zinc-400 group-hover:text-primary transition-colors">
-                                <IconComponent className="h-6 w-6" />
+                            <div className="h-10 w-10 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 flex items-center justify-center text-zinc-400 group-hover:text-primary transition-colors">
+                                <IconComponent className="h-5 w-5" />
                             </div>
                         </div>
 
-                        <div className="space-y-6">
-                            <div className="flex items-center justify-between p-4 rounded-2xl bg-zinc-50/50 dark:bg-zinc-950/30 border border-zinc-100 dark:border-zinc-800/30">
-                                <div className="flex items-center gap-3">
-                                    <Icons.Settings className="h-4 w-4 text-zinc-400" />
-                                    <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-tighter">{machine.type}</span>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/10 border border-zinc-100 dark:border-zinc-800/50">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="p-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
+                                        <Icons.Settings className="h-3.5 w-3.5 text-zinc-400" />
+                                    </div>
+                                    <span className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-tight">{machine.type}</span>
                                 </div>
-                                <Icons.Activity className="h-4 w-4 text-zinc-300" />
+                                <Icons.Activity className="h-3.5 w-3.5 text-zinc-300" />
                             </div>
 
-                            <div className="min-h-[60px] flex flex-col justify-center">
+                            <div className="min-h-[50px] flex flex-col justify-center px-1">
                                 {isOcupada ? (
                                     <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                                            <div className="h-5 w-5 bg-amber-500/10 rounded-lg flex items-center justify-center">
-                                                <Icons.Play className="h-3 w-3 text-amber-500 fill-amber-500" />
-                                            </div>
-                                            <span>En proceso activo</span>
+                                        <div className="flex items-center gap-2 text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                                            <Icons.PlayCircle className="h-4 w-4 text-emerald-500" />
+                                            <span>Trabajo en curso</span>
                                         </div>
-                                        <p className="text-[10px] text-zinc-400 font-medium ml-7 uppercase tracking-wider">{machine.currentJobId || 'Monitorizando carga...'}</p>
+                                        <p className="text-[11px] text-zinc-500 font-medium ml-6 truncate">{machine.currentJobId || 'Monitorizando carga...'}</p>
                                     </div>
                                 ) : isMantenimiento ? (
-                                    <div className="space-y-2 text-rose-500">
-                                        <div className="flex items-center gap-2 text-xs font-bold">
+                                    <div className="space-y-1.5 text-rose-600 dark:text-rose-400">
+                                        <div className="flex items-center gap-2 text-xs font-semibold">
                                             <Icons.AlertTriangle className="h-4 w-4" />
-                                            <span>Intervención Requerida</span>
+                                            <span>Fuera de servicio</span>
                                         </div>
-                                        <p className="text-[10px] font-medium ml-6 opacity-60 uppercase tracking-widest">Fuera de servicio operativo</p>
+                                        <p className="text-[11px] font-medium ml-6 opacity-70 italic">Intervención técnica requerida</p>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center gap-3 opacity-40">
-                                        <Icons.Box className="h-5 w-5" />
-                                        <span className="text-xs font-medium italic">Preparada p/ asignación...</span>
+                                    <div className="flex items-center gap-3 opacity-60">
+                                        <div className="h-8 w-8 rounded-full bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center">
+                                            <Icons.Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                        </div>
+                                        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 italic">Lista para producción</span>
                                     </div>
                                 )}
                             </div>
 
-                            <div className="flex gap-2 pt-4">
+                            <div className="flex gap-2 pt-2">
                                 {isLibre ? (
-                                    <button
+                                    <Button
                                         disabled={isSubmitting}
                                         onClick={() => onAssign(machine.id)}
-                                        className="flex-1 h-12 rounded-2xl bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-zinc-950/10 disabled:opacity-50"
+                                        className="flex-1 h-10 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold shadow-sm transition-all active:scale-[0.98] disabled:opacity-50"
                                     >
-                                        Asignar Pedido
-                                    </button>
+                                        Asignar Trabajo
+                                    </Button>
                                 ) : (
-                                    <button
+                                    <Button
                                         disabled={isSubmitting}
+                                        variant="outline"
                                         onClick={() => onRelease(machine.id)}
-                                        className="flex-1 h-12 rounded-2xl border-2 border-zinc-100 dark:border-zinc-800 text-zinc-900 dark:text-zinc-50 text-xs font-black uppercase tracking-widest hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all disabled:opacity-50"
+                                        className="flex-1 h-10 rounded-xl border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-bold hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all disabled:opacity-50"
                                     >
                                         {isSubmitting ? '...' : 'Liberar Unidad'}
-                                    </button>
+                                    </Button>
                                 )}
-                                <button
+                                <Button
+                                    variant="outline"
+                                    size="icon"
                                     onClick={() => onDetail(machine.id)}
-                                    className="h-12 w-12 rounded-2xl border-2 border-zinc-100 dark:border-zinc-800 flex items-center justify-center hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all group/btn"
+                                    className="h-10 w-10 rounded-xl border-zinc-200 dark:border-zinc-800 flex items-center justify-center hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all group/btn"
                                 >
-                                    <Icons.Settings className="h-4 w-4 text-zinc-400 group-hover/btn:rotate-90 transition-transform duration-500" />
-                                </button>
+                                    <Icons.MoreHorizontal className="h-4 w-4 text-zinc-500 group-hover/btn:text-primary transition-colors" />
+                                </Button>
                             </div>
                         </div>
                     </div>

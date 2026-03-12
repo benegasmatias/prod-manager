@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { Negocio, Rubro, NegocioConfig, getNegocioConfig, mapCategoryToRubro } from '@/src/domain/negocio'
 import { api } from '@/src/lib/api'
 import { toast } from 'react-hot-toast'
+import { createClient } from '@/lib/supabase/client'
 
 interface NegocioContextType {
     negocios: Negocio[]
@@ -51,47 +52,85 @@ export function NegocioProvider({ children }: { children: React.ReactNode }) {
 
     const initialized = useRef(false)
 
-    useEffect(() => {
-        const init = async () => {
-            if (initialized.current) return
+    const init = useCallback(async (force = false) => {
+        if (initialized.current && !force) return
+        initialized.current = true
 
-            if (typeof window !== 'undefined') {
-                const path = window.location.pathname;
-                if (path === '/login' || path === '/register') {
-                    setIsInitialized(true);
-                    return;
-                }
+        const supabase = createClient()
+        const path = typeof window !== 'undefined' ? window.location.pathname : ''
+        const isAuthPage = path === '/login' || path === '/register'
+
+        try {
+            console.log('[NegocioContext] Inicializando con getUser()...');
+            const { data: { user: supabaseUser }, error: authError } = await supabase.auth.getUser()
+
+            if (authError || !supabaseUser) {
+                setUser(null);
+                setIsInitialized(true);
+                return;
             }
 
-            initialized.current = true
+            if (isAuthPage) {
+                setIsInitialized(true);
+                return;
+            }
+
+            // Si ya estamos inicializados y tenemos usuario, evitamos recargar todo 
+            // a menos que sea un evento de login explícito (force=true)
+            if (user && negocios.length > 0 && !force) {
+                setIsInitialized(true);
+                return;
+            }
+
+            const [loadedNegociosData, profile]: [Negocio[], any] = await Promise.all([
+                loadNegocios(),
+                api.users.getMe()
+            ])
+
+            setUser(profile)
+
             const savedActivo = localStorage.getItem('prodmanager_negocio_activo')
-
-            try {
-                const [loadedNegocios, profile]: [Negocio[], any] = await Promise.all([
-                    loadNegocios(),
-                    api.users.getMe()
-                ])
-
-                setUser(profile)
-
-                if (savedActivo && loadedNegocios.find(n => n.id === savedActivo)) {
-                    setNegocioActivoId(savedActivo)
-                } else if (loadedNegocios.length > 0) {
-                    const defaultId = profile.defaultBusinessId
-                    if (defaultId && loadedNegocios.find(n => n.id === defaultId)) {
-                        setNegocioActivoId(defaultId)
-                    } else {
-                        setNegocioActivoId(loadedNegocios[0].id)
-                    }
+            if (savedActivo && loadedNegociosData.find(n => n.id === savedActivo)) {
+                setNegocioActivoId(savedActivo)
+            } else if (loadedNegociosData.length > 0) {
+                const defaultId = profile.defaultBusinessId
+                if (defaultId && loadedNegociosData.find(n => n.id === defaultId)) {
+                    setNegocioActivoId(defaultId)
+                } else {
+                    setNegocioActivoId(loadedNegociosData[0].id)
                 }
-            } catch (e) {
-                console.error('[NegocioContext] Error initialization:', e)
-            } finally {
-                setIsInitialized(true)
             }
+        } catch (e: any) {
+            console.error('[NegocioContext] Error durante la inicialización:', e)
+            setUser(null)
+        } finally {
+            setIsInitialized(true)
         }
-        init()
     }, [loadNegocios])
+
+    useEffect(() => {
+        init()
+    }, [init])
+
+    useEffect(() => {
+        const supabase = createClient()
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
+            console.log(`[NegocioContext] Auth Event: ${event}`);
+
+            if (event === 'SIGNED_IN') {
+                init(true)
+            } else if (event === 'SIGNED_OUT') {
+                setUser(null)
+                setNegocios([])
+                setNegocioActivoId('')
+                initialized.current = false
+            }
+        })
+
+        return () => {
+            subscription.unsubscribe()
+        }
+    }, [init])
 
     useEffect(() => {
         if (isInitialized) {

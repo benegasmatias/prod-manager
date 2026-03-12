@@ -5,6 +5,7 @@ import { api } from '@/src/lib/api'
 import { Notification } from '@/src/domain/notifications'
 import { useNegocio } from '@/src/context/NegocioContext'
 import { toast } from 'react-hot-toast'
+import { usePathname } from 'next/navigation'
 
 interface NotificationsContextType {
     notifications: Notification[]
@@ -22,6 +23,7 @@ const NotificationsContext = createContext<NotificationsContextType | undefined>
 
 export function NotificationsProvider({ children }: { children: React.ReactNode }) {
     const { negocioActivoId } = useNegocio()
+    const pathname = usePathname()
     const [notifications, setNotifications] = useState<Notification[]>([])
     const [unreadCount, setUnreadCount] = useState(0)
     const [isLoading, setIsLoading] = useState(false)
@@ -29,6 +31,11 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
 
     const fetchNotifications = useCallback(async () => {
         if (!negocioActivoId) return
+
+        // No cargar notificaciones si estamos en la página de selección de negocio
+        if (pathname === '/select-business') {
+            return
+        }
 
         try {
             setIsLoading(true)
@@ -43,7 +50,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
         } finally {
             setIsLoading(false)
         }
-    }, [negocioActivoId])
+    }, [negocioActivoId, pathname])
 
     useEffect(() => {
         fetchNotifications()

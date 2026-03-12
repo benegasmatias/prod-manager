@@ -20,6 +20,7 @@ import { useNegocio } from '../context/NegocioContext'
 import { WhatsAppButton } from '@/src/components/WhatsAppButton'
 import { OrderStatusModal } from './OrderStatusModal'
 import { Employee } from '@/src/types'
+import { getStatusLabel, getStatusStyles } from '@/src/domain/negocio'
 
 interface OrdersTableProps {
     orders: Pedido[]
@@ -63,19 +64,11 @@ export function OrdersTable({
         setIsStatusModalOpen(true)
     }
 
-    const { config } = useNegocio();
+    const { config, negocioActivo } = useNegocio();
+    const rubro = negocioActivo?.rubro;
 
-    const getStatusStyles = (status: string) => {
-        const stage = config.productionStages.find(s => s.key === status);
-        if (stage && stage.color) {
-            // Using the color defined in config, mapping bg to text/border colors
-            const parts = stage.color.split('-');
-            const baseColor = parts.length > 1 ? parts[1] : 'zinc';
-
-            if (baseColor === 'zinc') return 'bg-zinc-100 text-zinc-600 border-zinc-200';
-            return `bg-${baseColor}-50 text-${baseColor}-600 border-${baseColor}-200 dark:bg-${baseColor}-950/20 dark:text-${baseColor}-400 dark:border-${baseColor}-900/50`;
-        }
-        return 'bg-zinc-50 text-zinc-500 border-zinc-200';
+    const getStatusStylesLocal = (status: string) => {
+        return getStatusStyles(status, rubro);
     }
 
     const SortIcon = ({ field }: { field: string }) => {
@@ -183,14 +176,14 @@ export function OrdersTable({
                                             <div
                                                 className={cn(
                                                     "text-[10px] font-black uppercase tracking-tight rounded-lg px-2.5 py-1.5 border shadow-sm outline-none cursor-pointer hover:bg-zinc-100 transition-all",
-                                                    getStatusStyles(order.estado)
+                                                    getStatusStylesLocal(order.estado)
                                                 )}
                                                 onClick={(e) => {
                                                     e.stopPropagation()
                                                     handleStatusChangeClick(order)
                                                 }}
                                             >
-                                                {config.productionStages.find(s => s.key === order.estado)?.label || order.estado}
+                                                {getStatusLabel(order.estado, rubro)}
                                             </div>
                                             {isUpdating && (
                                                 <div className="absolute -right-6">
@@ -353,7 +346,7 @@ export function OrdersTable({
                                 <div
                                     className={cn(
                                         "text-[10px] font-black uppercase tracking-tight rounded-lg px-3 py-1.5 border shadow-sm",
-                                        getStatusStyles(order.estado)
+                                        getStatusStylesLocal(order.estado)
                                     )}
                                     onClick={(e) => {
                                         e.preventDefault();
@@ -361,7 +354,7 @@ export function OrdersTable({
                                         handleStatusChangeClick(order)
                                     }}
                                 >
-                                    {currentStage?.label || order.estado}
+                                    {getStatusLabel(order.estado, rubro)}
                                 </div>
                                 {!hideUrgency && <BadgeUrgencia urgencia={order.urgencia} />}
                                 {order.responsableGeneral && (

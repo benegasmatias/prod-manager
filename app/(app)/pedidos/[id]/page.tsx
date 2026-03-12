@@ -12,7 +12,7 @@ import { ArrowLeft, Save, Printer, Trash2, Edit3, X, Copy } from 'lucide-react'
 import Link from 'next/link'
 import { Input } from '@/src/components/ui/input'
 import { Label } from '@/src/components/ui/label'
-import { getNegocioConfig, mapCategoryToRubro } from '@/src/domain/negocio'
+import { getNegocioConfig, getStatusLabel, getStatusStyles, mapCategoryToRubro } from '@/src/domain/negocio'
 import { useNegocio } from '@/src/context/NegocioContext'
 import { usePedidos } from '@/src/context/PedidosContext'
 import { api } from '@/src/lib/api'
@@ -20,6 +20,7 @@ import { WhatsAppButton } from '@/src/components/WhatsAppButton'
 import { toast } from 'react-hot-toast'
 import { cn } from '@/src/lib/utils'
 import { OrderStatusModal } from '@/src/components/OrderStatusModal'
+import { ConfirmDialog } from '@/src/components/ConfirmDialog'
 
 export default function OrderDetailPage() {
     const { id } = useParams()
@@ -34,6 +35,7 @@ export default function OrderDetailPage() {
     const { updatePedido } = usePedidos()
     const [isSaving, setIsSaving] = useState(false)
     const [isStatusModalOpen, setIsStatusModalOpen] = useState(false)
+    const [isConfirmCancelOpen, setIsConfirmCancelOpen] = useState(false)
 
     useEffect(() => {
         if (negocioActivoId) {
@@ -182,11 +184,15 @@ export default function OrderDetailPage() {
 
     const handleCancelOrder = async () => {
         if (!order) return
-        if (!confirm('¿Está seguro de que desea ANULAR este pedido? Esta acción no se puede deshacer.')) return
+        setIsConfirmCancelOpen(true)
+    }
 
+    const confirmCancelOrder = async () => {
+        if (!order) return
+        setIsConfirmCancelOpen(false)
         setIsSaving(true)
         try {
-            await api.orders.updateStatus(order.id, 'CANCELLED' as any)
+            await api.orders.updateStatus(order.id, { status: 'CANCELLED' })
             toast.success('Pedido anulado correctamente')
             await fetchOrder()
         } catch (error) {
@@ -221,19 +227,12 @@ export default function OrderDetailPage() {
 
     const effectiveConfig = getNegocioConfig(effectiveRubro)
 
-    const getStatusStyles = (status: string) => {
-        const stage = effectiveConfig.productionStages.find(s => s.key === status)
-        if (stage) {
-            const baseColor = stage.color.split('-')[1] // Ej: 'blue', 'emerald'
-            if (baseColor === 'zinc') return 'bg-zinc-100 text-zinc-600 border-zinc-200'
-            return `bg-${baseColor}-50 text-${baseColor}-600 border-${baseColor}-200 dark:bg-${baseColor}-950/20 dark:text-${baseColor}-400 dark:border-${baseColor}-900/50`
-        }
-        return 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
+    const getStatusLabelLocal = (status: string) => {
+        return getStatusLabel(status, effectiveRubro)
     }
 
-    const getStatusLabel = (status: string) => {
-        const stage = effectiveConfig.productionStages.find(s => s.key === status)
-        return stage?.label || status
+    const getStatusStylesLocal = (status: string) => {
+        return getStatusStyles(status, effectiveRubro)
     }
 
     const fieldsBySection: Record<string, typeof effectiveConfig.itemFields> = {}
@@ -260,7 +259,7 @@ export default function OrderDetailPage() {
                 <div className="flex items-center gap-2 sm:gap-3">
                     <WhatsAppButton
                         phone={order.clientPhone}
-                        message={`Hola ${order.clientName}! Te consulto sobre tu pedido ${order.numero} que está en estado: ${getStatusLabel(order.estado)}.`}
+                        message={`Hola ${order.clientName}! Te consulto sobre tu pedido ${order.numero} que está en estado: ${getStatusLabelLocal(order.estado)}.`}
                         variant="ghost"
                         className="bg-green-50/50 hover:bg-green-100 dark:bg-green-900/10 dark:hover:bg-green-900/20 text-green-700 dark:text-green-500 border border-green-200 dark:border-green-900 flex-1 sm:flex-none"
                     />
@@ -508,8 +507,8 @@ export default function OrderDetailPage() {
                                                         <span className="text-[10px] font-black uppercase text-zinc-400">
                                                             {new Date(h.changedAt).toLocaleString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                                         </span>
-                                                        <Badge className={cn("text-[9px] font-black uppercase border shadow-none", getStatusStyles(h.toStatus))}>
-                                                            {getStatusLabel(h.toStatus)}
+                                                        <Badge className={cn("text-[9px] font-black uppercase border shadow-none", getStatusStylesLocal(h.toStatus))}>
+                                                            {getStatusLabelLocal(h.toStatus)}
                                                         </Badge>
                                                     </div>
                                                     {h.note && <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400 italic">"{h.note}"</p>}
@@ -728,10 +727,10 @@ export default function OrderDetailPage() {
                                 <div className="flex justify-between items-center text-sm py-1">
                                     <span className="text-zinc-500 font-bold uppercase text-[10px] tracking-wider">Estado</span>
                                     <Badge
-                                        className={cn("font-black uppercase text-[10px] px-3 py-1.5 rounded-xl shadow-sm cursor-pointer hover:opacity-80 transition-opacity", getStatusStyles(order.estado))}
+                                        className={cn("font-black uppercase text-[10px] px-3 py-1.5 rounded-xl shadow-sm cursor-pointer hover:opacity-80 transition-opacity", getStatusStylesLocal(order.estado))}
                                         onClick={handleStatusUpdateClick}
                                     >
-                                        {getStatusLabel(order.estado)}
+                                        {getStatusLabelLocal(order.estado)}
                                     </Badge>
                                 </div>
                                 <div className="flex justify-between items-center text-sm py-1">
@@ -785,6 +784,18 @@ export default function OrderDetailPage() {
                     await fetchOrder()
                 }}
                 employees={employees}
+            />
+
+            <ConfirmDialog
+                isOpen={isConfirmCancelOpen}
+                onClose={() => setIsConfirmCancelOpen(false)}
+                onConfirm={confirmCancelOrder}
+                title="¿Anular Pedido?"
+                description="¿Estás seguro de que deseas anular este pedido? Esta acción no se puede deshacer y el pedido quedará marcado como cancelado permanentemente."
+                confirmLabel="Sí, Anular Pedido"
+                cancelLabel="No, Mantener"
+                variant="danger"
+                isLoading={isSaving}
             />
         </div>
     )

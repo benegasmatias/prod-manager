@@ -11,6 +11,7 @@ import { OrderStatusModal } from './OrderStatusModal'
 import { Plus, ChevronLeft, ChevronRight, Eye, EyeOff, LayoutGrid, List } from 'lucide-react'
 import { Button } from '@/src/components/ui/button'
 import { cn } from '@/src/lib/utils'
+import { getStatusLabel, getStatusStyles, getStatusColorBase } from '@/src/domain/negocio'
 
 interface OrdersKanbanProps {
     orders: Pedido[]
@@ -18,7 +19,8 @@ interface OrdersKanbanProps {
 }
 
 export function OrdersKanban({ orders, employees }: OrdersKanbanProps) {
-    const { negocioActivoId, config } = useNegocio()
+    const { negocioActivoId, config, negocioActivo } = useNegocio()
+    const rubro = negocioActivo?.rubro;
     const [isStatusModalOpen, setIsStatusModalOpen] = useState(false)
     const [selectedOrder, setSelectedOrder] = useState<Pedido | null>(null)
     const [isFailureRequested, setIsFailureRequested] = useState(false)
@@ -302,9 +304,10 @@ export function OrdersKanban({ orders, employees }: OrdersKanbanProps) {
                                     <div className={cn("flex items-center gap-2", isCollapsed && "flex-col")}>
                                         <h3 className={cn(
                                             "text-xs font-black uppercase tracking-[0.2em] text-zinc-500 transition-all",
-                                            isCollapsed && "rotate-180 [writing-mode:vertical-lr] py-4 h-40"
+                                            isCollapsed && "rotate-180 [writing-mode:vertical-lr] py-4 h-40",
+                                            columnOrders.length > 0 ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400"
                                         )}>
-                                            {col.label}
+                                            {getStatusLabel(col.key, rubro)}
                                         </h3>
                                         <span className="flex items-center justify-center h-5 px-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[10px] font-black text-zinc-500 tabular-nums">
                                             {columnOrders.length}
@@ -334,7 +337,7 @@ export function OrdersKanban({ orders, employees }: OrdersKanbanProps) {
                                                     onDragStart={(e) => onDragStart(e, order.id)}
                                                     className="cursor-grab active:cursor-grabbing hover:border-primary/30 dark:hover:border-primary/20 transition-all shadow-sm rounded-2xl border-zinc-200/60 dark:border-zinc-800/50 overflow-hidden group/card relative"
                                                 >
-                                                    <div className={cn("absolute top-0 left-0 w-1 h-full transition-colors", col.color)} />
+                                                    <div className={cn("absolute top-0 left-0 w-1 h-full transition-colors", getStatusColorBase(col.key, rubro))} />
                                                     <CardContent className="p-4 space-y-4 pointer-events-none">
                                                         <div className="flex items-start justify-between">
                                                             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest tabular-nums italic">#{order.numero}</span>

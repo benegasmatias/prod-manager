@@ -46,15 +46,6 @@ export default function StockOrdersPage() {
         }
     }, [orders, negocioActivoId])
 
-    if (!negocioActivoId || (orders === undefined && isLocalLoading)) {
-        return (
-            <div className="flex flex-col items-center justify-center py-40 gap-4">
-                <div className="h-10 w-10 border-4 border-zinc-100 border-t-zinc-900 rounded-full animate-spin" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Cargando Inventario...</p>
-            </div>
-        )
-    }
-
     const currentOrders = useMemo(() => orders || [], [orders])
 
     const stockOrders = useMemo(() => currentOrders.filter(o =>
@@ -127,141 +118,210 @@ export default function StockOrdersPage() {
         }
     }
 
+    if (!negocioActivoId || (orders === undefined && isLocalLoading)) {
+        return (
+            <div className="flex flex-col items-center justify-center py-40 gap-4">
+                <div className="h-10 w-10 border-4 border-zinc-100 border-t-zinc-900 rounded-full animate-spin" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Cargando Inventario...</p>
+            </div>
+        )
+    }
+
     return (
-        <div className="space-y-8 pb-10">
-            {/* Header */}
+        <div className="space-y-10 pb-16">
+            {/* Header Section */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                <div>
-                    <h1 className="text-3xl font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-50">Inventario de Producción</h1>
-                    <p className="text-sm font-medium text-zinc-500 mt-1 italic">Gestión de fabricación de inventario y reposición</p>
+                <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                        <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Monitoreo de Activos</span>
+                    </div>
+                    <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                        Inventario de <span className="text-primary italic">Producción</span>
+                    </h1>
+                    <p className="text-sm font-medium text-zinc-500 max-w-2xl leading-relaxed">
+                        Control centralizado de manufactura interna, gestión de activos terminados y proyecciones de rentabilidad.
+                    </p>
                 </div>
-                <div className="flex items-center gap-4">
-                    <Button asChild className="h-12 px-8 rounded-2xl font-black uppercase tracking-widest text-[11px] gap-3 shadow-xl shadow-primary/20 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
-                        <Link href="/stock/nuevo">
-                            <Plus className="h-5 w-5" /> Nueva Orden de Reposición
+                <div className="flex items-center gap-3">
+                    <Button asChild className="h-11 px-6 rounded-xl bg-primary text-primary-foreground font-bold text-xs shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all active:scale-[0.98] gap-2 lg:h-12 lg:px-8 group">
+                        <Link href="/stock/nuevo" className="flex items-center gap-2">
+                            <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
+                            <span>Generar Reposición</span>
                         </Link>
                     </Button>
                 </div>
             </div>
 
-            {/* Quick Stats Cards */}
+            {/* Premium Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 shadow-sm space-y-3">
-                    <div className="h-10 w-10 rounded-xl bg-purple-50 dark:bg-purple-900/10 flex items-center justify-center">
-                        <Wallet className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                <div className="relative group overflow-hidden bg-white dark:bg-zinc-900/40 p-8 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1 backdrop-blur-sm">
+                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Wallet className="h-20 w-20 text-zinc-900 dark:text-white" />
                     </div>
-                    <div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Inversión Total</span>
-                        <p className="text-2xl font-black tabular-nums tracking-tight">{formatARS(stats.totalInvestment)}</p>
+                    <div className="relative z-10 space-y-4">
+                        <div className="h-12 w-12 rounded-2xl bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-zinc-100 border border-zinc-100 dark:border-zinc-700">
+                            <Wallet className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 mb-1">Capital Invertido</p>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-3xl font-black tracking-tighter text-zinc-900 dark:text-zinc-50">
+                                    {formatARS(stats.totalInvestment).split(',')[0]}
+                                </span>
+                                <span className="text-sm font-bold text-zinc-400">,00</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 shadow-sm space-y-3">
-                    <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center">
-                        <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+
+                <div className="relative group overflow-hidden bg-primary p-8 rounded-[2.5rem] shadow-xl shadow-primary/20 transition-all hover:scale-[1.01]">
+                    <div className="absolute top-0 right-0 p-8 opacity-10">
+                        <TrendingUp className="h-20 w-20 text-white" />
                     </div>
-                    <div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Proyección de Venta</span>
-                        <p className="text-2xl font-black tabular-nums tracking-tight">{formatARS(stats.totalInvestment + stats.pendingProfit)}</p>
+                    <div className="relative z-10 space-y-4">
+                        <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center text-white border border-white/10 backdrop-blur-sm">
+                            <TrendingUp className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50 mb-1">Retorno Proyectado</p>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-3xl font-black tracking-tighter text-white">
+                                    {formatARS(stats.totalInvestment + stats.pendingProfit).split(',')[0]}
+                                </span>
+                                <span className="text-sm font-bold text-white/40">,00</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 shadow-sm space-y-3">
-                    <div className="h-10 w-10 rounded-xl bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center">
-                        <Package2 className="h-5 w-5 text-white dark:text-zinc-900" />
+
+                <div className="relative group overflow-hidden bg-white dark:bg-zinc-900/40 p-8 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1 backdrop-blur-sm">
+                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Package2 className="h-20 w-20 text-zinc-900 dark:text-white" />
                     </div>
-                    <div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Ordenes de Reposición</span>
-                        <p className="text-2xl font-black tabular-nums tracking-tight">{stats.activeOrdersCount}</p>
+                    <div className="relative z-10 space-y-4">
+                        <div className="h-12 w-12 rounded-2xl bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-zinc-100 border border-zinc-100 dark:border-zinc-700">
+                            <Package2 className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 mb-1">Órdenes Activas</p>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-3xl font-black tracking-tighter text-zinc-900 dark:text-zinc-50">
+                                    {stats.activeOrdersCount}
+                                </span>
+                                <span className="text-xs font-bold text-zinc-400 uppercase">Procesos</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Filters */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-white dark:bg-zinc-900/20 p-6 rounded-[2rem] border border-zinc-100 dark:border-zinc-800/50 shadow-sm">
-                <div className="lg:col-span-8 space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">Buscar Orden</label>
-                    <div className="relative group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 group-focus-within:text-zinc-900 dark:group-focus-within:text-zinc-100 transition-colors" />
-                        <Input
-                            placeholder="Buscar por Nº o Responsable..."
-                            className="pl-11 h-12 border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50 rounded-2xl font-bold focus:bg-white dark:focus:bg-zinc-900 transition-all"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
+            {/* Filter Section */}
+            <div className="flex flex-col lg:flex-row items-center gap-6 bg-white dark:bg-zinc-900/40 p-4 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-sm backdrop-blur-sm overflow-hidden">
+                <div className="relative flex-1 w-full group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 group-focus-within:text-primary transition-colors" />
+                    <input
+                        type="text"
+                        placeholder="Filtrar por número de orden, producto o responsable..."
+                        className="h-11 w-full rounded-2xl border-none bg-zinc-50/50 dark:bg-zinc-950/50 pl-12 pr-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all focus:bg-white dark:focus:bg-zinc-950"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
 
-                <div className="lg:col-span-4 space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">Estado de Producción</label>
-                    <div className="relative">
+                <div className="flex items-center gap-4 w-full lg:w-auto">
+                    <div className="relative w-full lg:w-[240px] group">
                         <select
-                            className="w-full h-12 rounded-2xl border border-zinc-100 bg-white dark:bg-zinc-900 dark:border-zinc-800 px-4 text-xs font-bold focus:outline-none appearance-none transition-all"
+                            className="w-full h-11 rounded-2xl border-none bg-zinc-50/50 dark:bg-zinc-950/50 px-4 pr-10 text-xs font-bold text-zinc-500 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all appearance-none cursor-pointer"
                             value={estadoFilter}
                             onChange={(e) => setEstadoFilter(e.target.value)}
                         >
-                            <option value="all">TODAS LAS ÓRDENES</option>
+                            <option value="all">TODOS LOS ESTADOS</option>
                             {config.productionStages.map(stage => (
                                 <option key={stage.key} value={stage.key}>{stage.label.toUpperCase()}</option>
                             ))}
                         </select>
-                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400 pointer-events-none" />
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none group-hover:text-zinc-600 transition-colors" />
                     </div>
                 </div>
             </div>
 
-            {/* Table Active */}
-            <div className="space-y-4">
-                <div className="flex items-center gap-3 ml-2">
-                    <div className="h-2 w-2 rounded-full bg-zinc-900 dark:bg-white" />
-                    <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-400">En Fabricación</h2>
-                    <span className="text-[10px] font-bold text-zinc-400 tabular-nums">({activeOrders.length})</span>
+            {/* Active Production Section */}
+            <div className="space-y-6">
+                <div className="flex items-center justify-between px-2">
+                    <div className="flex items-center gap-3">
+                        <div className="h-6 w-1 bg-primary rounded-full" />
+                        <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                            En Línea de Producción
+                            <span className="text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-full">{activeOrders.length}</span>
+                        </h2>
+                    </div>
+                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Crucial para Inventario</p>
                 </div>
+
                 {activeOrders.length > 0 ? (
-                    <OrdersTable
-                        orders={activeOrders}
-                        getClientName={() => 'STOCK'}
-                        sortKey={sortKey}
-                        sortDir={sortDir}
-                        onSort={handleSort}
-                        employees={employees}
-                        hideTypeColumn={true}
-                        hideUrgency={true}
-                        hideDelivery={true}
-                        hideFinancials={true}
-                        clientLabel="Referencia"
-                    />
+                    <div className="overflow-hidden rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900/20 shadow-sm">
+                        <OrdersTable
+                            orders={activeOrders}
+                            getClientName={() => 'STOCK'}
+                            sortKey={sortKey}
+                            sortDir={sortDir}
+                            onSort={handleSort}
+                            employees={employees}
+                            hideTypeColumn={true}
+                            hideUrgency={true}
+                            hideDelivery={true}
+                            hideFinancials={true}
+                            clientLabel="Referencia"
+                        />
+                    </div>
                 ) : (
-                    <div className="p-12 text-center rounded-[2rem] border-2 border-dashed border-zinc-100 dark:border-zinc-800">
-                        <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest leading-loose">No hay órdenes de producción<br />activas para inventario</p>
+                    <div className="py-20 text-center flex flex-col items-center justify-center gap-6 border-2 border-dashed rounded-[2.5rem] border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/5 dark:bg-zinc-900/5">
+                        <div className="h-16 w-16 rounded-2xl bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center border border-zinc-100 dark:border-zinc-700">
+                            <Package2 className="h-7 w-7 text-zinc-200" />
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-base font-bold text-zinc-400 tracking-tight">Sin procesos activos</p>
+                            <p className="text-xs text-zinc-500 max-w-sm mx-auto font-medium">No se detectan órdenes de reposición en la línea actual.</p>
+                        </div>
                     </div>
                 )}
             </div>
 
             {/* In Stock History */}
             {inStockOrders.length > 0 && (
-                <div className="pt-8 space-y-6 opacity-60 hover:opacity-100 transition-opacity">
-                    <div className="flex items-center gap-4">
-                        <div className="h-[1px] flex-1 bg-zinc-200 dark:bg-zinc-800" />
-                        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Manufactura Ingresada a Inventario</h2>
-                        <div className="h-[1px] flex-1 bg-zinc-200 dark:bg-zinc-800" />
+                <div className="pt-12 space-y-6">
+                    <div className="flex items-center gap-4 px-2">
+                        <div className="flex items-center gap-3">
+                            <div className="h-6 w-1 bg-emerald-500 rounded-full" />
+                            <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                                Disponibles en Depósito
+                                <span className="text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 px-2 py-0.5 rounded-full">{inStockOrders.length}</span>
+                            </h2>
+                        </div>
+                        <div className="h-[1px] flex-1 bg-zinc-100 dark:bg-zinc-800" />
+                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Listos p/ Venta</p>
                     </div>
 
-                    <OrdersTable
-                        orders={inStockOrders}
-                        getClientName={() => 'STOCK'}
-                        sortKey={sortKey}
-                        sortDir={sortDir}
-                        onSort={handleSort}
-                        employees={employees}
-                        hideTypeColumn={true}
-                        hideUrgency={true}
-                        hideDelivery={true}
-                        hideFinancials={true}
-                        onSell={(order) => {
-                            setSelectedOrder(order)
-                            setIsSellModalOpen(true)
-                        }}
-                        clientLabel="Referencia"
-                    />
+                    <div className="overflow-hidden rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900/10 backdrop-blur-sm shadow-sm transition-all hover:shadow-md">
+                        <OrdersTable
+                            orders={inStockOrders}
+                            getClientName={() => 'STOCK'}
+                            sortKey={sortKey}
+                            sortDir={sortDir}
+                            onSort={handleSort}
+                            employees={employees}
+                            hideTypeColumn={true}
+                            hideUrgency={true}
+                            hideDelivery={true}
+                            hideFinancials={true}
+                            onSell={(order) => {
+                                setSelectedOrder(order)
+                                setIsSellModalOpen(true)
+                            }}
+                            clientLabel="Referencia"
+                        />
+                    </div>
                 </div>
             )}
 

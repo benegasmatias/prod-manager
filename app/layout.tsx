@@ -8,6 +8,7 @@ import { ClientesProvider } from '@/src/context/ClientesContext'
 import { PedidosProvider } from '@/src/context/PedidosContext'
 import { SidebarProvider } from '@/src/context/SidebarContext'
 import { NotificationsProvider } from '@/src/context/NotificationsContext'
+import { AuthProvider } from '@/src/context/AuthContext'
 
 const geistSans = Geist({
 
@@ -34,21 +35,23 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
         <ThemeProvider>
-          <SidebarProvider>
-            <NegocioProvider>
-              <NotificationsProvider>
-                <ClientesProvider>
-                  <PedidosProvider>
-                    {children}
-                    <Toaster position="top-right" />
-                  </PedidosProvider>
-                </ClientesProvider>
-              </NotificationsProvider>
-            </NegocioProvider>
-          </SidebarProvider>
-
+          <AuthProvider>
+            <SidebarProvider>
+              <NegocioProvider>
+                <NotificationsProvider>
+                  <ClientesProvider>
+                    <PedidosProvider>
+                      {children}
+                      <Toaster position="top-right" />
+                    </PedidosProvider>
+                  </ClientesProvider>
+                </NotificationsProvider>
+              </NegocioProvider>
+            </SidebarProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -56,14 +56,27 @@ export default function ReportsPage() {
     if (!data) return null
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Reportes</h1>
-                    <p className="text-zinc-500 dark:text-zinc-400">Análisis detallado de rendimiento y finanzas en tiempo real.</p>
+        <div className="space-y-10 pb-16">
+            {/* Header Area */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                        <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Inteligencia de Datos</span>
+                    </div>
+                    <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                        Análisis y <span className="text-primary italic">Métricas</span>
+                    </h1>
+                    <p className="text-sm font-medium text-zinc-500 max-w-2xl leading-relaxed">
+                        Desempeño operativo, rentabilidad por unidad y proyecciones estratégicas de manufactura.
+                    </p>
                 </div>
-                <Button className="gap-2" variant="outline" onClick={() => window.print()}>
-                    <Calendar className="h-4 w-4" /> Imprimir Reporte
+                <Button
+                    className="h-11 px-6 lg:h-12 lg:px-8 rounded-xl border-zinc-200 dark:border-zinc-800 font-bold text-xs gap-2 transition-all hover:bg-zinc-50 dark:hover:bg-zinc-900 shadow-sm"
+                    variant="outline"
+                    onClick={() => window.print()}
+                >
+                    <Calendar className="h-4 w-4" /> Exportar Reporte
                 </Button>
             </div>
 
@@ -86,10 +99,10 @@ export default function ReportsPage() {
                 />
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-                <Card className="border-zinc-200 dark:border-zinc-800">
-                    <CardHeader>
-                        <CardTitle className="text-lg font-bold">Ventas Mensuales (Últimos 6 Meses)</CardTitle>
+            <div className="grid gap-8 md:grid-cols-2">
+                <Card className="border-zinc-100 dark:border-zinc-800/50 shadow-sm overflow-hidden rounded-[2.5rem] bg-white dark:bg-zinc-900/40 backdrop-blur-sm">
+                    <CardHeader className="p-8 border-b border-zinc-50 dark:border-zinc-800/50 bg-zinc-50/30 dark:bg-zinc-900/10">
+                        <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Ventas Mensuales (Últimos 6 Meses)</CardTitle>
                     </CardHeader>
                     <CardContent className="h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
@@ -124,11 +137,11 @@ export default function ReportsPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-zinc-200 dark:border-zinc-800">
-                    <CardHeader>
-                        <CardTitle className="text-lg font-bold">Top Productos (por cantidad)</CardTitle>
+                <Card className="border-zinc-100 dark:border-zinc-800/50 shadow-sm overflow-hidden rounded-[2.5rem] bg-white dark:bg-zinc-900/40 backdrop-blur-sm">
+                    <CardHeader className="p-8 border-b border-zinc-50 dark:border-zinc-800/50 bg-zinc-50/30 dark:bg-zinc-900/10">
+                        <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Top Productos (por cantidad)</CardTitle>
                     </CardHeader>
-                    <CardContent className="h-[300px] flex items-center">
+                    <CardContent className="p-8 h-[300px] flex items-center">
                         <div className="w-full flex">
                             <div className="w-1/2 h-[240px]">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -165,11 +178,11 @@ export default function ReportsPage() {
                 </Card>
             </div>
 
-            <Card className="border-zinc-200 dark:border-zinc-800">
-                <CardHeader>
-                    <CardTitle className="text-lg font-bold">Rendimiento por Máquina</CardTitle>
+            <Card className="border-zinc-100 dark:border-zinc-800/50 shadow-sm overflow-hidden rounded-[2.5rem] bg-white dark:bg-zinc-900/40 backdrop-blur-sm">
+                <CardHeader className="p-8 border-b border-zinc-50 dark:border-zinc-800/50 bg-zinc-50/30 dark:bg-zinc-900/10">
+                    <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Rendimiento por Máquina</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-8">
                     <div className="space-y-6">
                         {data.printerStats.map((m: any) => (
                             <div key={m.name} className="space-y-2">
@@ -180,9 +193,9 @@ export default function ReportsPage() {
                                     </div>
                                     <span className="text-sm font-black whitespace-nowrap">{m.efficiency}% eficiencia</span>
                                 </div>
-                                <div className="h-3 w-full rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                                <div className="h-4 w-full rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden border border-zinc-200/50 dark:border-zinc-800/50">
                                     <div
-                                        className="h-full rounded-full bg-zinc-900 dark:bg-zinc-50 transition-all duration-1000"
+                                        className="h-full rounded-full bg-primary transition-all duration-1000 shadow-[0_0_12px_rgba(var(--primary-rgb),0.3)]"
                                         style={{ width: `${m.efficiency}%` }}
                                     />
                                 </div>

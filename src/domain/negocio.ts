@@ -20,6 +20,10 @@ export interface CampoItem {
     options?: string[];
     placeholder?: string;
     className?: string;
+    visibleIf?: {
+        key: string;
+        values: string[];
+    };
 }
 
 export interface StatMetric {
@@ -116,7 +120,7 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
                 },
                 itemFields: [
                     { key: 'nombreProducto', label: 'Nombre del Modelo / Trabajo', tipo: 'text', section: 'INFORMACIÓN DEL TRABAJO', required: true, placeholder: 'Ej. Llavero de pared' },
-                    { key: 'material_id', label: 'Filamento / Material', tipo: 'material-select', section: 'INFORMACIÓN DEL TRABAJO', required: true },
+                    { key: 'tipo_filamento', label: 'Tipo de Filamento (General)', tipo: 'select', section: 'INFORMACIÓN DEL TRABAJO', options: ['PLA', 'PETG', 'ABS', 'TPU', 'RESIN', 'NYLON', 'FLEX'], required: false },
                     { key: 'seDiseñaSTL', label: '¿Se diseña el STL?', tipo: 'boolean', section: 'INFORMACIÓN DEL TRABAJO' },
                     { key: 'precioDiseno', label: 'Costo de Diseño ($)', tipo: 'number', section: 'INFORMACIÓN DEL TRABAJO', placeholder: 'Ej. 2500' },
                     { key: 'url_stl', label: 'URL STL', tipo: 'url', section: 'INFORMACIÓN DEL TRABAJO', placeholder: 'https://...' },
@@ -191,11 +195,11 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
                     { key: 'terminacion', label: 'Terminación / Proceso', tipo: 'text', section: 'ESPECIFICACIONES TÉCNICAS', placeholder: 'Ej: Pintura epoxi al horno' },
                     { key: 'color', label: 'Color Final', tipo: 'text', section: 'ESPECIFICACIONES TÉCNICAS', placeholder: 'Ej: Negro microtexturado' },
 
-                    { key: 'motor', label: 'Incluye Motor', tipo: 'boolean', section: 'OPCIONALES' },
+                    { key: 'motor', label: 'Incluye Motor', tipo: 'boolean', section: 'OPCIONALES', visibleIf: { key: 'tipo_trabajo', values: ['Portón Corredizo', 'Portón Batiente'] } },
                     { key: 'instalacion', label: 'Requiere Instalación', tipo: 'boolean', section: 'OPCIONALES' },
-                    { key: 'guias', label: 'Incluye Guías/Rieles', tipo: 'boolean', section: 'OPCIONALES' },
-                    { key: 'cerradura', label: 'Cerradura de Seguridad', tipo: 'boolean', section: 'OPCIONALES' },
-                    { key: 'refuerzos', label: 'Refuerzos Estructurales', tipo: 'boolean', section: 'OPCIONALES' },
+                    { key: 'guias', label: 'Incluye Guías/Rieles', tipo: 'boolean', section: 'OPCIONALES', visibleIf: { key: 'tipo_trabajo', values: ['Portón Corredizo', 'Portón Batiente'] } },
+                    { key: 'cerradura', label: 'Cerradura de Seguridad', tipo: 'boolean', section: 'OPCIONALES', visibleIf: { key: 'tipo_trabajo', values: ['Portón Corredizo', 'Portón Batiente', 'Puerta', 'Reja'] } },
+                    { key: 'refuerzos', label: 'Refuerzos Estructurales', tipo: 'boolean', section: 'OPCIONALES', visibleIf: { key: 'tipo_trabajo', values: ['Portón Corredizo', 'Portón Batiente', 'Estructura', 'Puerta'] } },
                 ],
                 staffPlaceholder: 'Ej: Soldador, Pintor, Armado, Plegador...',
             };
@@ -317,6 +321,61 @@ export function getNegocioConfig(rubro: Rubro): NegocioConfig {
 
     }
 }
+export function getStatusLabel(status: string, rubro?: Rubro): string {
+    const config = getNegocioConfig(rubro || 'GENERICO');
+    const stage = config.productionStages.find(s => s.key === status);
+    if (stage) return stage.label;
+
+    // Fallbacks para estados estándar no definidos en el rubro
+    const fallbacks: Record<string, string> = {
+        'PENDING': 'Pendiente',
+        'IN_PROGRESS': 'En Proceso',
+        'DONE': 'Terminado',
+        'DELIVERED': 'Entregado',
+        'CANCELLED': 'Anulado',
+        'READY': 'Listo',
+        'FAILED': 'Fallido',
+        'IN_STOCK': 'En Stock'
+    };
+
+    return fallbacks[status] || status;
+}
+
+export function getStatusStyles(status: string, rubro?: Rubro): string {
+    const config = getNegocioConfig(rubro || 'GENERICO');
+    const stage = config.productionStages.find(s => s.key === status);
+
+    const color = stage?.color || (status === 'CANCELLED' ? 'bg-red-100' : 'bg-zinc-100');
+
+    const parts = color.split('-');
+    const baseColor = parts.length > 1 ? parts[1] : 'zinc';
+
+    if (baseColor === 'zinc') return 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800';
+
+    // Generar clases de Tailwind consistentes
+    return `bg-${baseColor}-50 text-${baseColor}-600 border-${baseColor}-200 dark:bg-${baseColor}-950/20 dark:text-${baseColor}-400 dark:border-${baseColor}-900/50`;
+}
+
+export function getStatusColorBase(status: string, rubro?: Rubro): string {
+    const config = getNegocioConfig(rubro || 'GENERICO');
+    const stage = config.productionStages.find(s => s.key === status);
+
+    if (stage?.color) return stage.color;
+
+    const fallbacks: Record<string, string> = {
+        'PENDING': 'bg-zinc-100',
+        'IN_PROGRESS': 'bg-blue-500',
+        'DONE': 'bg-emerald-500',
+        'DELIVERED': 'bg-zinc-100',
+        'CANCELLED': 'bg-red-500',
+        'READY': 'bg-emerald-500',
+        'FAILED': 'bg-red-500',
+        'IN_STOCK': 'bg-purple-500'
+    };
+
+    return fallbacks[status] || 'bg-zinc-100';
+}
+
 export function mapCategoryToRubro(category?: string): Rubro {
     if (!category) return 'GENERICO';
 
